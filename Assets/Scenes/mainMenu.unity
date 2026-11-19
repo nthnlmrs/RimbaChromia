@@ -1370,6 +1370,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 077fd78b19329ec4788e8ea9451fa5e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SceneLoader
+  fadeCanvasGroup: {fileID: 0}
+  fadeDuration: 0.5
+  fadeColor: {r: 0, g: 0, b: 0, a: 1}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
