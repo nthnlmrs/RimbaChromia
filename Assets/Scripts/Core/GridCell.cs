@@ -23,14 +23,18 @@ public class GridCell : MonoBehaviour
     [Header("Visual")]
     [SerializeField] private Material normalMaterial;
     [SerializeField] private Material selectedMaterial;
+    [SerializeField] private Material hoverMaterial;
 
     private MeshRenderer meshRenderer;
+    private bool isHovered;
+    private bool isSelected;
 
     public int Row => row;
     public int Column => column;
     public TileType Type => tileType;
     public bool IsOccupied => isOccupied;
     public int FireLevel => fireLevel;
+    public bool IsOnFire => fireLevel > 0;
     public Tower OccupyingTower => occupyingTower;
 
     private void Awake()
@@ -50,7 +54,8 @@ public class GridCell : MonoBehaviour
         int newColumn,
         TileType newTileType,
         Material newNormalMaterial,
-        Material newSelectedMaterial)
+        Material newSelectedMaterial,
+        Material newHoverMaterial = null)
     {
         row = newRow;
         column = newColumn;
@@ -58,29 +63,50 @@ public class GridCell : MonoBehaviour
 
         normalMaterial = newNormalMaterial;
         selectedMaterial = newSelectedMaterial;
+        hoverMaterial = newHoverMaterial != null ? newHoverMaterial : newSelectedMaterial;
 
         isOccupied = false;
         fireLevel = 0;
         occupyingTower = null;
+        isHovered = false;
+        isSelected = false;
 
         gameObject.name = $"Cell_{row}_{column}_{tileType}";
 
-        ApplyNormalMaterial();
+        UpdateVisual();
     }
 
-    public bool CanPlaceTower()
+    public bool CanPlaceTower(TowerData towerData)
     {
-        if (isOccupied)
+        if (towerData == null || isOccupied)
         {
             return false;
         }
 
-        if (tileType != TileType.Grass)
+        // Sesuai GDD: Tower tetap bisa dipasang di Grass meskipun tile sedang terbakar
+        if (tileType == TileType.Grass && towerData.canPlaceOnGrass)
+        {
+            return true;
+        }
+
+        // Sesuai GDD: Hanya Red Tower & Orange Tower yang boleh dipasang di Bare Path
+        if (tileType == TileType.BarePath && towerData.canPlaceOnBarePath)
+        {
+            return true;
+        }
+
+        // Forest dan Wall tidak bisa dipasangi tower
+        return false;
+    }
+
+    public bool CanMergeWith(TowerData incomingData)
+    {
+        if (!isOccupied || occupyingTower == null || incomingData == null)
         {
             return false;
         }
 
-        return true;
+        return occupyingTower.CanMergeWith(incomingData);
     }
 
     public void PlaceTower(Tower newTower)
@@ -104,34 +130,62 @@ public class GridCell : MonoBehaviour
         isOccupied = false;
     }
 
-    public void SelectCell()
+    public void SetHovered(bool hovered)
     {
-        if (meshRenderer == null || selectedMaterial == null)
+        if (isHovered == hovered)
         {
             return;
         }
 
-        meshRenderer.sharedMaterial = selectedMaterial;
+        isHovered = hovered;
+        UpdateVisual();
+    }
+
+    public void SelectCell()
+    {
+        isSelected = true;
+        UpdateVisual();
     }
 
     public void DeselectCell()
     {
-        ApplyNormalMaterial();
+        isSelected = false;
+        UpdateVisual();
     }
 
     public void SetFireLevel(int newFireLevel)
     {
+        // Sesuai GDD: Api tidak membakar Bare Path dan Surrounding Forest
+        if (tileType == TileType.BarePath || tileType == TileType.Forest)
+        {
+            fireLevel = 0;
+            return;
+        }
+
         fireLevel = Mathf.Clamp(newFireLevel, 0, 3);
     }
 
-    private void ApplyNormalMaterial()
+    private void UpdateVisual()
     {
         if (meshRenderer == null)
         {
             meshRenderer = GetComponent<MeshRenderer>();
         }
 
-        if (meshRenderer != null && normalMaterial != null)
+        if (meshRenderer == null)
+        {
+            return;
+        }
+
+        if (isSelected && selectedMaterial != null)
+        {
+            meshRenderer.sharedMaterial = selectedMaterial;
+        }
+        else if (isHovered && hoverMaterial != null)
+        {
+            meshRenderer.sharedMaterial = hoverMaterial;
+        }
+        else if (normalMaterial != null)
         {
             meshRenderer.sharedMaterial = normalMaterial;
         }

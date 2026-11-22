@@ -15,6 +15,12 @@ public class GridManager : MonoBehaviour
     [SerializeField] private Material forestMaterial;
     [SerializeField] private Material wallMaterial;
     [SerializeField] private Material selectedMaterial;
+    [SerializeField] private Material hoverMaterial;
+
+    [Header("Systems")]
+    [SerializeField] private InsightManager insightManager;
+    [SerializeField] private TowerData selectedTowerData;
+    [SerializeField] private TowerData[] towerHotbar;
 
     [Header("Tower Placement")]
     [SerializeField] private Tower towerPrefab;
@@ -73,6 +79,8 @@ public class GridManager : MonoBehaviour
 
     private void Update()
     {
+        HandleHotbarShortcuts();
+
         if (Mouse.current == null)
         {
             return;
@@ -87,6 +95,37 @@ public class GridManager : MonoBehaviour
         }
     }
 
+    public void SetSelectedTowerData(TowerData newTowerData)
+    {
+        selectedTowerData = newTowerData;
+    }
+
+    private void HandleHotbarShortcuts()
+    {
+        if (Keyboard.current == null || towerHotbar == null || towerHotbar.Length == 0)
+        {
+            return;
+        }
+
+        if (Keyboard.current.digit1Key.wasPressedThisFrame) SelectHotbarSlot(0);
+        else if (Keyboard.current.digit2Key.wasPressedThisFrame) SelectHotbarSlot(1);
+        else if (Keyboard.current.digit3Key.wasPressedThisFrame) SelectHotbarSlot(2);
+        else if (Keyboard.current.digit4Key.wasPressedThisFrame) SelectHotbarSlot(3);
+        else if (Keyboard.current.digit5Key.wasPressedThisFrame) SelectHotbarSlot(4);
+        else if (Keyboard.current.digit6Key.wasPressedThisFrame) SelectHotbarSlot(5);
+    }
+
+    private void SelectHotbarSlot(int index)
+    {
+        if (index < 0 || index >= towerHotbar.Length || towerHotbar[index] == null)
+        {
+            return;
+        }
+
+        selectedTowerData = towerHotbar[index];
+        Debug.Log($"Tower dipilih [Slot {index + 1}]: {selectedTowerData.towerName} (Cost: {selectedTowerData.cost})");
+    }
+
     private bool ValidateLayout()
     {
         if (mapLayout.Length != rows)
@@ -95,7 +134,6 @@ public class GridManager : MonoBehaviour
                 $"Jumlah baris layout adalah {mapLayout.Length}, " +
                 $"tetapi GridManager membutuhkan {rows} baris."
             );
-
             return false;
         }
 
@@ -104,11 +142,9 @@ public class GridManager : MonoBehaviour
             if (mapLayout[row].Length != columns)
             {
                 Debug.LogError(
-                    $"Layout row {row} mempunyai " +
-                    $"{mapLayout[row].Length} karakter. " +
+                    $"Layout row {row} mempunyai {mapLayout[row].Length} karakter. " +
                     $"Seharusnya {columns} karakter."
                 );
-
                 return false;
             }
         }
@@ -125,10 +161,7 @@ public class GridManager : MonoBehaviour
 
         if (mainCamera == null)
         {
-            Debug.LogError(
-                "Main Camera tidak ditemukan. Pastikan kamera memiliki tag MainCamera."
-            );
-
+            Debug.LogError("Main Camera tidak ditemukan. Pastikan kamera memiliki tag MainCamera.");
             return null;
         }
 
@@ -159,14 +192,14 @@ public class GridManager : MonoBehaviour
 
         if (hoveredCell != null)
         {
-            hoveredCell.DeselectCell();
+            hoveredCell.SetHovered(false);
         }
 
         hoveredCell = cellUnderCursor;
 
         if (hoveredCell != null)
         {
-            hoveredCell.SelectCell();
+            hoveredCell.SetHovered(true);
         }
     }
 
@@ -194,11 +227,8 @@ public class GridManager : MonoBehaviour
         {
             for (int column = 0; column < columns; column++)
             {
-                TileType tileType =
-                    GetTileType(mapLayout[row][column]);
-
-                Material tileMaterial =
-                    GetTileMaterial(tileType);
+                TileType tileType = GetTileType(mapLayout[row][column]);
+                Material tileMaterial = GetTileMaterial(tileType);
 
                 Vector3 cellPosition = new Vector3(
                     column * cellSize,
@@ -227,72 +257,52 @@ public class GridManager : MonoBehaviour
                     column,
                     tileType,
                     tileMaterial,
-                    selectedMaterial
+                    selectedMaterial,
+                    hoverMaterial
                 );
 
                 cells[row, column] = newCell;
             }
         }
 
-        Debug.Log(
-            $"Grid berhasil dibuat: {rows} x {columns} = " +
-            $"{rows * columns} cell."
-        );
+        Debug.Log($"Grid berhasil dibuat: {rows} x {columns} = {rows * columns} cell.");
     }
 
     private bool ValidateReferences()
     {
         if (cellPrefab == null)
         {
-            Debug.LogError(
-                "Cell Prefab belum dipasang pada GridManager."
-            );
-
+            Debug.LogError("Cell Prefab belum dipasang pada GridManager.");
             return false;
         }
 
         if (grassMaterial == null)
         {
-            Debug.LogError(
-                "Grass Material belum dipasang pada GridManager."
-            );
-
+            Debug.LogError("Grass Material belum dipasang pada GridManager.");
             return false;
         }
 
         if (barePathMaterial == null)
         {
-            Debug.LogError(
-                "Bare Path Material belum dipasang pada GridManager."
-            );
-
+            Debug.LogError("Bare Path Material belum dipasang pada GridManager.");
             return false;
         }
 
         if (forestMaterial == null)
         {
-            Debug.LogError(
-                "Forest Material belum dipasang pada GridManager."
-            );
-
+            Debug.LogError("Forest Material belum dipasang pada GridManager.");
             return false;
         }
 
         if (wallMaterial == null)
         {
-            Debug.LogError(
-                "Wall Material belum dipasang pada GridManager."
-            );
-
+            Debug.LogError("Wall Material belum dipasang pada GridManager.");
             return false;
         }
 
         if (selectedMaterial == null)
         {
-            Debug.LogError(
-                "Selected Material belum dipasang pada GridManager."
-            );
-
+            Debug.LogError("Selected Material belum dipasang pada GridManager.");
             return false;
         }
 
@@ -305,22 +315,14 @@ public class GridManager : MonoBehaviour
         {
             case 'G':
                 return TileType.Grass;
-
             case 'P':
                 return TileType.BarePath;
-
             case 'F':
                 return TileType.Forest;
-
             case 'W':
                 return TileType.Wall;
-
             default:
-                Debug.LogWarning(
-                    $"Kode tile '{tileCode}' tidak dikenal. " +
-                    "Tile diubah menjadi Grass."
-                );
-
+                Debug.LogWarning($"Kode tile '{tileCode}' tidak dikenal. Tile diubah menjadi Grass.");
                 return TileType.Grass;
         }
     }
@@ -331,16 +333,12 @@ public class GridManager : MonoBehaviour
         {
             case TileType.Grass:
                 return grassMaterial;
-
             case TileType.BarePath:
                 return barePathMaterial;
-
             case TileType.Forest:
                 return forestMaterial;
-
             case TileType.Wall:
                 return wallMaterial;
-
             default:
                 return grassMaterial;
         }
@@ -350,23 +348,17 @@ public class GridManager : MonoBehaviour
     {
         if (cellContainer == null)
         {
-            GameObject cellContainerObject =
-                new GameObject("Generated Cells");
-
+            GameObject cellContainerObject = new GameObject("Generated Cells");
             cellContainerObject.transform.SetParent(transform);
             cellContainerObject.transform.localPosition = Vector3.zero;
-
             cellContainer = cellContainerObject.transform;
         }
 
         if (towerContainer == null)
         {
-            GameObject towerContainerObject =
-                new GameObject("Placed Towers");
-
+            GameObject towerContainerObject = new GameObject("Placed Towers");
             towerContainerObject.transform.SetParent(transform);
             towerContainerObject.transform.localPosition = Vector3.zero;
-
             towerContainer = towerContainerObject.transform;
         }
     }
@@ -379,7 +371,7 @@ public class GridManager : MonoBehaviour
         }
 
         SelectCell(clickedCell);
-        TryPlaceTower(clickedCell);
+        TryPlaceOrMergeTower(clickedCell);
     }
 
     private void SelectCell(GridCell newCell)
@@ -391,49 +383,52 @@ public class GridManager : MonoBehaviour
 
         selectedCell = newCell;
         selectedCell.SelectCell();
-
-        Debug.Log(
-            $"Cell dipilih: Row {selectedCell.Row}, " +
-            $"Column {selectedCell.Column}, " +
-            $"Type {selectedCell.Type}"
-        );
     }
 
-    private void TryPlaceTower(GridCell targetCell)
+    private void TryPlaceOrMergeTower(GridCell targetCell)
     {
-        if (towerPrefab == null)
+        if (towerPrefab == null || selectedTowerData == null || insightManager == null)
         {
-            Debug.LogError(
-                "Tower Prefab belum dipasang pada GridManager."
-            );
-
+            Debug.LogError("Pastikan Tower Prefab, Selected Tower Data, dan Insight Manager sudah dipasang di GridManager.");
             return;
         }
 
-        if (!targetCell.CanPlaceTower())
+        // Jika tile sudah ada tower yang sama & masih bisa naik tier -> Merge
+        if (targetCell.CanMergeWith(selectedTowerData))
         {
-            if (targetCell.IsOccupied)
+            if (!insightManager.TrySpendInsight(selectedTowerData.cost))
             {
                 Debug.LogWarning(
-                    $"Tower gagal dipasang. Cell Row " +
-                    $"{targetCell.Row}, Column " +
-                    $"{targetCell.Column} sudah ditempati."
+                    $"Insight tidak cukup untuk merge {selectedTowerData.towerName}. " +
+                    $"Butuh {selectedTowerData.cost}, tersedia {insightManager.CurrentInsight}."
                 );
-
                 return;
             }
 
-            Debug.LogWarning(
-                $"Tower gagal dipasang. Tile " +
-                $"{targetCell.Type} tidak menerima tower ini."
-            );
-
+            targetCell.OccupyingTower.TryMergeUpgrade();
             return;
         }
 
-        Vector3 towerPosition =
-            targetCell.transform.position +
-            Vector3.up * towerHeightOffset;
+        // Jika bukan merge, cek apakah tile valid untuk deploy baru
+        if (!targetCell.CanPlaceTower(selectedTowerData))
+        {
+            Debug.LogWarning(
+                $"Tidak bisa pasang {selectedTowerData.towerName} di Cell ({targetCell.Row}, {targetCell.Column}) " +
+                $"[{targetCell.Type}] (Occupied: {targetCell.IsOccupied})."
+            );
+            return;
+        }
+
+        if (!insightManager.TrySpendInsight(selectedTowerData.cost))
+        {
+            Debug.LogWarning(
+                $"Insight tidak cukup untuk pasang {selectedTowerData.towerName}. " +
+                $"Butuh {selectedTowerData.cost}, tersedia {insightManager.CurrentInsight}."
+            );
+            return;
+        }
+
+        Vector3 towerPosition = targetCell.transform.position + Vector3.up * towerHeightOffset;
 
         Tower newTower = Instantiate(
             towerPrefab,
@@ -442,7 +437,7 @@ public class GridManager : MonoBehaviour
             towerContainer
         );
 
-        newTower.Setup(targetCell);
+        newTower.Setup(targetCell, selectedTowerData);
         targetCell.PlaceTower(newTower);
     }
 
