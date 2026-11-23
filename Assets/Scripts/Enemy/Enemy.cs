@@ -5,6 +5,13 @@ public class Enemy : MonoBehaviour
 {
     public static readonly List<Enemy> ActiveEnemies = new List<Enemy>();
 
+    // Domain Reload dimatikan di project ini -> bersihkan list static setiap kali Play ditekan
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticsOnPlay()
+    {
+        ActiveEnemies.Clear();
+    }
+
     [Header("Ember Bot Stats")]
     [SerializeField] private float maxHP = 70f;
     [SerializeField] private float attackDamage = 20f;
@@ -19,7 +26,11 @@ public class Enemy : MonoBehaviour
     private List<Vector2Int> pathCoords;
     private int targetIndex;
 
+    private EnemyData data;
+
+    public EnemyData Data => data;
     public float CurrentHP => currentHP;
+    public float MaxHP => maxHP;
     public bool IsDead => currentHP <= 0f;
     public int PathProgress => targetIndex;
 
@@ -36,8 +47,13 @@ public class Enemy : MonoBehaviour
         ActiveEnemies.Remove(this);
     }
 
-    public void Setup(GridManager manager, List<Vector2Int> newPath, WallHealth wall)
+    public void Setup(GridManager manager, List<Vector2Int> newPath, WallHealth wall, EnemyData enemyData = null)
     {
+        if (enemyData != null)
+        {
+            ApplyData(enemyData);
+        }
+
         gridManager = manager;
         pathCoords = newPath;
         wallHealth = wall;
@@ -90,6 +106,33 @@ public class Enemy : MonoBehaviour
 
         attackTimer = 0f;
         MoveToward(targetCell);
+    }
+
+    private void ApplyData(EnemyData enemyData)
+    {
+        data = enemyData;
+        maxHP = data.maxHP;
+        attackDamage = data.attackDamage;
+        attackCooldown = data.attackCooldown;
+        moveSpeed = data.MoveSpeed;
+
+        if (data.placeholderScale != Vector3.zero)
+        {
+            transform.localScale = data.placeholderScale;
+            // Kubus placeholder: alasnya pas di atas permukaan tile (tile tebal 0.15, pusat di y=0)
+            heightOffset = 0.075f + data.placeholderScale.y * 0.5f;
+        }
+
+        // Warna placeholder supaya tiap jenis musuh bisa dibedakan sebelum sprite final masuk
+        Renderer meshRenderer = GetComponentInChildren<Renderer>();
+        if (meshRenderer != null)
+        {
+            MaterialPropertyBlock block = new MaterialPropertyBlock();
+            meshRenderer.GetPropertyBlock(block);
+            block.SetColor("_BaseColor", data.placeholderColor);
+            block.SetColor("_Color", data.placeholderColor);
+            meshRenderer.SetPropertyBlock(block);
+        }
     }
 
     private bool IsBlockedByBarrier(GridCell cell, out Tower barrierTower)

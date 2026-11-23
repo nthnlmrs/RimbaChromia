@@ -71,7 +71,12 @@ public class GridManager : MonoBehaviour
         }
     }
 
-    private readonly string[] mapLayout =
+    // Layout yang benar-benar dipakai. Index 0 = baris paling ATAS layar.
+    private string[] mapLayout;
+    private readonly Dictionary<int, Vector2Int> spawnPoints = new Dictionary<int, Vector2Int>();
+
+    // Fallback kalau scene tidak punya WaveManager / StageData (map test lama)
+    private readonly string[] defaultLayout =
     {
         "GGGGGGGGGGGGGGGGGGGGG",
         "GGGGGGGGGGGGGGGGGGGGG",
@@ -81,7 +86,7 @@ public class GridManager : MonoBehaviour
         "GGGGGGGGGGGGGGGGGGGGG",
         "GGGGGGGGGGGGGGGGGGGGG",
         "GGGGGGGGGGGGGGGGGGGGG",
-        "PPPPPPPPPPPPPPPPPPPPW",
+        "1PPPPPPPPPPPPPPPPPPPW",
         "GGGGGGGGGGGGGGGGGGGGG",
         "GGGGGGGGGGGGGGGGGGGGG",
         "GGGGGGGGGGGGGGGGGGGGG",
@@ -95,6 +100,15 @@ public class GridManager : MonoBehaviour
     private void Start()
     {
         mainCamera = Camera.main;
+
+        StageData stage = WaveManager.Instance != null ? WaveManager.Instance.CurrentStage : null;
+        mapLayout = stage != null ? stage.GetPlayLayout() : defaultLayout;
+
+        if (mapLayout.Length > 0)
+        {
+            rows = mapLayout.Length;
+            columns = mapLayout[0].Length;
+        }
 
         if (!ValidateLayout())
         {
@@ -245,7 +259,8 @@ public class GridManager : MonoBehaviour
 
         CreateContainers();
 
-        cells = new GridCell[rows, columns];
+        GridCell[,] newCells = new GridCell[rows, columns];
+        spawnPoints.Clear();
 
         float gridWidth = (columns - 1) * cellSize;
         float gridHeight = (rows - 1) * cellSize;
@@ -260,7 +275,14 @@ public class GridManager : MonoBehaviour
         {
             for (int column = 0; column < columns; column++)
             {
-                TileType tileType = GetTileType(mapLayout[row][column]);
+                // Row 0 ada di dekat kamera (bawah layar), jadi baris teks dibaca dari bawah
+                char tileCode = mapLayout[rows - 1 - row][column];
+                TileType tileType = GetTileType(tileCode);
+
+                if (char.IsDigit(tileCode) && tileCode != '0')
+                {
+                    spawnPoints[tileCode - '0'] = new Vector2Int(row, column);
+                }
                 Material tileMaterial = GetTileMaterial(tileType);
 
                 Vector3 cellPosition = new Vector3(
@@ -294,9 +316,12 @@ public class GridManager : MonoBehaviour
                     hoverMaterial
                 );
 
-                cells[row, column] = newCell;
+                newCells[row, column] = newCell;
             }
         }
+
+        // Baru di-assign setelah semua cell jadi, supaya IsGridReady tidak true terlalu cepat
+        cells = newCells;
 
         Debug.Log($"Grid berhasil dibuat: {rows} x {columns} = {rows * columns} cell.");
         OnGridGenerated?.Invoke();
@@ -355,6 +380,8 @@ public class GridManager : MonoBehaviour
                 return TileType.Forest;
             case 'W':
                 return TileType.Wall;
+            case char digit when char.IsDigit(digit) && digit != '0':
+                return TileType.BarePath; // titik spawn musuh
             default:
                 Debug.LogWarning($"Kode tile '{tileCode}' tidak dikenal. Tile diubah menjadi Grass.");
                 return TileType.Grass;
@@ -491,6 +518,70 @@ public class GridManager : MonoBehaviour
         }
 
         return cells[row, column];
+    }
+
+    public bool TryGetSpawnPoint(int spawnPoint, out Vector2Int coord)
+    {
+        return spawnPoints.TryGetValue(spawnPoint, out coord);
+    }
+
+    /// <summary>
+    /// Jalur terpendek (row, column) dari titik start melewati Bare Path sampai tile Wall terdekat.
+    /// Elemen terakhir adalah tile Wall. Return null kalau tidak ada jalur.
+    /// </summary>
+    public List<Vector2Int> FindPathToWall(Vector2Int start)
+    {
+        if (GetCell(start.x, start.y) == null)
+        {
+            return null;
+        }
+
+        Vector2Int[] directions =
+        {
+            new Vector2Int(1, 0), new Vector2Int(-1, 0),
+            new Vector2Int(0, 1), new Vector2Int(0, -1)
+        };
+
+        Dictionary<Vector2Int, Vector2Int> cameFrom = new Dictionary<Vector2Int, Vector2Int>();
+        Queue<Vector2Int> queue = new Queue<Vector2Int>();
+        queue.Enqueue(start);
+        cameFrom[start] = start;
+
+        while (queue.Count > 0)
+        {
+            Vector2Int current = queue.Dequeue();
+            GridCell currentCell = GetCell(current.x, current.y);
+
+            if (currentCell.Type == TileType.Wall)
+            {
+                List<Vector2Int> path = new List<Vector2Int>();
+                Vector2Int step = current;
+                while (step != start)
+                {
+                    path.Add(step);
+                    step = cameFrom[step];
+                }
+                path.Add(start);
+                path.Reverse();
+                return path;
+            }
+
+            foreach (Vector2Int dir in directions)
+            {
+                Vector2Int next = current + dir;
+                if (cameFrom.ContainsKey(next)) continue;
+
+                GridCell nextCell = GetCell(next.x, next.y);
+                if (nextCell == null) continue;
+                if (nextCell.Type != TileType.BarePath && nextCell.Type != TileType.Wall) continue;
+
+                cameFrom[next] = current;
+                queue.Enqueue(next);
+            }
+        }
+
+        Debug.LogError($"Tidak ada jalur Bare Path dari ({start.x}, {start.y}) ke Wall. Cek layout stage.");
+        return null;
     }
 
     public IEnumerable<GridCell> AllCells()

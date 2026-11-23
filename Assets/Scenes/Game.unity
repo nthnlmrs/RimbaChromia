@@ -927,7 +927,7 @@ GameObject:
   - component: {fileID: 1795559266}
   - component: {fileID: 1795559265}
   m_Layer: 0
-  m_Name: EnemySpawner
+  m_Name: WaveManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -942,14 +942,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 1795559264}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f57c21378ffd82245861212237966843, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TestEnemySpawner
+  m_Script: {fileID: 11500000, guid: d965c51b1ae28e7916ad7790ec473cd5, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::WaveManager
+  stages:
+  - {fileID: 11400000, guid: 3557a61d3ee8154ab3726e5709b2f21f, type: 2}
+  - {fileID: 11400000, guid: acfa25c7aca472c9467152894e9a01f1, type: 2}
+  - {fileID: 11400000, guid: f1f10d49bbccd9a9bc155dc27c99da6d, type: 2}
+  startStage: 1
   gridManager: {fileID: 1348853349}
   wallHealth: {fileID: 247439702}
   enemyPrefab: {fileID: 6589915451260836331, guid: 7fdd79a0d0198be48b3cf1f25ce093d5, type: 3}
-  spawnInterval: 4
-  maxSpawnCount: 1
+  skipCountdownKey: 28
+  showDebugHud: 1
 --- !u!4 &1795559266
 Transform:
   m_ObjectHideFlags: 0

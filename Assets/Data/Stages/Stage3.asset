@@ -1,0 +1,173 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e58342632b8b09830a7cadc3c48e743, type: 3}
+  m_Name: Stage3
+  m_EditorClassIdentifier: Assembly-CSharp::StageData
+  stageName: Stage 3
+  layoutRows:
+  - FFFFFFFFFFFFFFFFF
+  - FGGGGGGWWWGGGGGGF
+  - FGGGGGGGPGGGGGGGF
+  - FGGGGGGGPGGGGGGGF
+  - FGGGGGGGPGGGGGGGF
+  - FGGGGGGGPGGGGGGGF
+  - FGGGGGGGPGGGGGGGF
+  - FGGGGGGPPPGGGGGGF
+  - FGGGGGPPPPPGGGGGF
+  - FGGGGGPPPPPGGGGGF
+  - FGGGGPPGPGPPGGGGF
+  - FGGGPPGGPGGPPGGGF
+  - FGGGPGGGPGGGPGGGF
+  - FGGPPGGGPGGGPPGGF
+  - FGGPGGGGPGGGGPGGF
+  - FGPPGGGGPGGGGPPGF
+  - FGPGGGGGPGGGGGPGF
+  - FPPGGGGGPGGGGGPPF
+  - FPGGGGGGPGGGGGGPF
+  - F1GGGGGG2GGGGGG3F
+  - FFFFFFFFFFFFFFFFF
+  rotateClockwise: 1
+  spawnPointNames:
+  - Kiri
+  - Tengah
+  - Kanan
+  prepTime: 15
+  breakTime: 15
+  waves:
+  - groups:
+    - spawnPoint: 2
+      enemy: {fileID: 11400000, guid: 51caf4ceeb5cca30c6139a337004058f, type: 2}
+      count: 3
+      interval: 1.5
+      startDelay: 0
+    - spawnPoint: 2
+      enemy: {fileID: 11400000, guid: af5d893496f6ebb055d03a3ef51c4df8, type: 2}
+      count: 2
+      interval: 3
+      startDelay: 0
+    - spawnPoint: 2
+      enemy: {fileID: 11400000, guid: dcceaa13fc4c4bb2edecc9f3a1457251, type: 2}
+      count: 1
+      interval: 3
+      startDelay: 0
+    - spawnPoint: 3
+      enemy: {fileID: 11400000, guid: 51caf4ceeb5cca30c6139a337004058f, type: 2}
+      count: 6
+      interval: 1.5
+      startDelay: 0
+    - spawnPoint: 3
+      enemy: {fileID: 11400000, guid: dcceaa13fc4c4bb2edecc9f3a1457251, type: 2}
+      count: 1
+      interval: 3
+      startDelay: 0
+    - spawnPoint: 1
+      enemy: {fileID: 11400000, guid: 51caf4ceeb5cca30c6139a337004058f, type: 2}
+      count: 6
+      interval: 1.5
+      startDelay: 0
+    - spawnPoint: 1
+      enemy: {fileID: 11400000, guid: dcceaa13fc4c4bb2edecc9f3a1457251, type: 2}
+      count: 1
+      interval: 3
+      startDelay: 0
+  - groups:
+    - spawnPoint: 2
+      enemy: {fileID: 11400000, guid: af5d893496f6ebb055d03a3ef51c4df8, type: 2}
+      count: 2
+      interval: 3
+      startDelay: 0
+    - spawnPoint: 2
+      enemy: {fileID: 11400000, guid: ee88cec3f5d44e72aac9bf87385075b4, type: 2}
+      count: 2
+      interval: 3
+      startDelay: 0
+    - spawnPoint: 2
+      enemy: {fileID: 11400000, guid: dcceaa13fc4c4bb2edecc9f3a1457251, type: 2}
+      count: 1
+      interval: 3
+      startDelay: 0
+    - spawnPoint: 3
+      enemy: {fileID: 11400000, guid: 51caf4ceeb5cca30c6139a337004058f, type: 2}
+      count: 5
+      interval: 1.5
+      startDelay: 0
+    - spawnPoint: 3
+      enemy: {fileID: 11400000, guid: af5d893496f6ebb055d03a3ef51c4df8, type: 2}
+      count: 1
+      interval: 3
+      startDelay: 0
+    - spawnPoint: 3
+      enemy: {fileID: 11400000, guid: ee88cec3f5d44e72aac9bf87385075b4, type: 2}
+      count: 1
+      interval: 3
+      startDelay: 0
+    - spawnPoint: 1
+      enemy: {fileID: 11400000, guid: 51caf4ceeb5cca30c6139a337004058f, type: 2}
+      count: 5
+      interval: 1.5
+      startDelay: 0
+    - spawnPoint: 1
+      enemy: {fileID: 11400000, guid: af5d893496f6ebb055d03a3ef51c4df8, type: 2}
+      count: 1
+      interval: 3
+      startDelay: 0
+    - spawnPoint: 1
+      enemy: {fileID: 11400000, guid: ee88cec3f5d44e72aac9bf87385075b4, type: 2}
+      count: 1
+      interval: 3
+      startDelay: 0
+  - groups:
+    - spawnPoint: 2
+      enemy: {fileID: 11400000, guid: c593be288d5b91985fbf0bc2aeaf5f1f, type: 2}
+      count: 1
+      interval: 3
+      startDelay: 0
+    - spawnPoint: 3
+      enemy: {fileID: 11400000, guid: 51caf4ceeb5cca30c6139a337004058f, type: 2}
+      count: 6
+      interval: 1.5
+      startDelay: 0
+    - spawnPoint: 3
+      enemy: {fileID: 11400000, guid: dcceaa13fc4c4bb2edecc9f3a1457251, type: 2}
+      count: 1
+      interval: 3
+      startDelay: 0
+    - spawnPoint: 3
+      enemy: {fileID: 11400000, guid: af5d893496f6ebb055d03a3ef51c4df8, type: 2}
+      count: 1
+      interval: 3
+      startDelay: 0
+    - spawnPoint: 3
+      enemy: {fileID: 11400000, guid: ee88cec3f5d44e72aac9bf87385075b4, type: 2}
+      count: 1
+      interval: 3
+      startDelay: 0
+    - spawnPoint: 1
+      enemy: {fileID: 11400000, guid: 51caf4ceeb5cca30c6139a337004058f, type: 2}
+      count: 6
+      interval: 1.5
+      startDelay: 0
+    - spawnPoint: 1
+      enemy: {fileID: 11400000, guid: dcceaa13fc4c4bb2edecc9f3a1457251, type: 2}
+      count: 1
+      interval: 3
+      startDelay: 0
+    - spawnPoint: 1
+      enemy: {fileID: 11400000, guid: af5d893496f6ebb055d03a3ef51c4df8, type: 2}
+      count: 1
+      interval: 3
+      startDelay: 0
+    - spawnPoint: 1
+      enemy: {fileID: 11400000, guid: ee88cec3f5d44e72aac9bf87385075b4, type: 2}
+      count: 1
+      interval: 3
+      startDelay: 0
