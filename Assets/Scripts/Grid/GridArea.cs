@@ -6,6 +6,7 @@ using UnityEngine;
 /// "5 grid"  = Plus5     (tile itu sendiri + 4 tetangga atas/bawah/kiri/kanan)
 /// "9 grid"  = Square9   (kotak 3x3)
 /// "13 grid" = Diamond13 (belah ketupat, jarak Manhattan <= 2)
+/// "25 grid" = Square25  (kotak 5x5, default jangkauan Blue tower)
 /// </summary>
 public enum AreaPattern
 {
@@ -13,7 +14,8 @@ public enum AreaPattern
     Single,
     Plus5,
     Square9,
-    Diamond13
+    Diamond13,
+    Square25 // ditambahkan di akhir supaya nilai enum yang sudah tersimpan di aset tidak bergeser
 }
 
 public static class GridArea
@@ -53,6 +55,16 @@ public static class GridArea
 
             case AreaPattern.Diamond13:
                 AddManhattan(offsets, 2);
+                break;
+
+            case AreaPattern.Square25:
+                for (int r = -2; r <= 2; r++)
+                {
+                    for (int c = -2; c <= 2; c++)
+                    {
+                        offsets.Add(new Vector2Int(r, c));
+                    }
+                }
                 break;
         }
 

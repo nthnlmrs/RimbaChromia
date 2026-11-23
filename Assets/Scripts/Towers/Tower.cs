@@ -235,20 +235,16 @@ public class Tower : MonoBehaviour
         int colDiff = Mathf.RoundToInt(offset.x / cellSize);
         int rowDiff = Mathf.RoundToInt(offset.z / cellSize);
 
-        if (data.rangeOffsets != null && data.rangeOffsets.Length > 0)
+        // Sumber area yang sama dengan preview penempatan (TowerData.GetRangeOffsets)
+        Vector2Int[] offsets = data.GetRangeOffsets();
+        for (int i = 0; i < offsets.Length; i++)
         {
-            for (int i = 0; i < data.rangeOffsets.Length; i++)
+            if (offsets[i].x == rowDiff && offsets[i].y == colDiff)
             {
-                if (data.rangeOffsets[i].x == rowDiff && data.rangeOffsets[i].y == colDiff)
-                {
-                    return true;
-                }
+                return true;
             }
-            return false;
         }
-
-        // Default Blue Tower sesuai GDD: area 5x5 grid (radius 2 tile ke semua arah)
-        return Mathf.Abs(rowDiff) <= 2 && Mathf.Abs(colDiff) <= 2;
+        return false;
     }
 
     public bool CanMergeWith(TowerData incomingData)

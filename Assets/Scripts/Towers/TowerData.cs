@@ -41,4 +41,30 @@ public class TowerData : ScriptableObject
     [Header("Placeholder Visual (Dummy 3D)")]
     public Material placeholderMaterial; // Boleh dibiarkan kosong, warna otomatis ikut dropdown Color
     public Vector3 placeholderScale = Vector3.one;
+
+    /// <summary>
+    /// Area jangkauan tower (offset row, col dari posisi tower).
+    /// Dipakai untuk logika serangan DAN preview area saat menaruh tower, supaya selalu sama.
+    /// Prioritas: rangeOffsets manual > default per role.
+    /// </summary>
+    public Vector2Int[] GetRangeOffsets()
+    {
+        if (rangeOffsets != null && rangeOffsets.Length > 0)
+        {
+            return rangeOffsets;
+        }
+
+        switch (role)
+        {
+            case TowerRole.Attacker:
+                return GridArea.GetOffsets(AreaPattern.Square25); // GDD belum menulis range, default 5x5
+            case TowerRole.Healer:
+                // Beam healer global; yang ditampilkan sebagai area adalah aura heal (T2/T3)
+                return auraArea != AreaPattern.None
+                    ? GridArea.GetOffsets(auraArea)
+                    : GridArea.GetOffsets(AreaPattern.Single);
+            default:
+                return GridArea.GetOffsets(AreaPattern.Single);
+        }
+    }
 }

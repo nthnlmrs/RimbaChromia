@@ -48,6 +48,28 @@ public class GridManager : MonoBehaviour
     public float CellSize => cellSize;
     public bool IsGridReady => cells != null;
 
+    // Mode penempatan: aktif setelah pilih tower (tombol angka), selesai setelah tower dipasang / dibatalkan
+    private bool isPlacing;
+    public bool IsPlacing => isPlacing && selectedTowerData != null;
+    public TowerData SelectedTowerData => selectedTowerData;
+    public GridCell HoveredCell => hoveredCell;
+    public Tower TowerPrefab => towerPrefab;
+    public float TowerHeightOffset => towerHeightOffset;
+
+    public bool CanAfford(TowerData towerData)
+    {
+        return towerData != null && insightManager != null && insightManager.HasEnoughInsight(towerData.cost);
+    }
+
+    /// <summary>Hasil kalau tower dilepas di cell ini: bisa pasang baru, bisa merge, atau tidak valid.</summary>
+    public PlacementResult EvaluatePlacement(GridCell cell, TowerData towerData)
+    {
+        if (cell == null || towerData == null) return PlacementResult.Invalid;
+        if (cell.CanMergeWith(towerData)) return PlacementResult.Merge;
+        if (cell.CanPlaceTower(towerData)) return PlacementResult.Place;
+        return PlacementResult.Invalid;
+    }
+
     // Dipanggil sekali setelah semua cell selesai dibuat (dipakai FireManager, WaveManager, dll.)
     public event Action OnGridGenerated;
 
@@ -60,6 +82,12 @@ public class GridManager : MonoBehaviour
         if (FindFirstObjectByType<FireManager>() == null)
         {
             gameObject.AddComponent<FireManager>();
+        }
+
+        // Bayangan tower + area jangkauan saat menaruh tower
+        if (GetComponent<PlacementPreview>() == null)
+        {
+            gameObject.AddComponent<PlacementPreview>();
         }
     }
 
@@ -131,15 +159,30 @@ public class GridManager : MonoBehaviour
         GridCell cellUnderCursor = GetCellUnderCursor();
         UpdateHover(cellUnderCursor);
 
+        // Batal menaruh tower: klik kanan / Esc
+        bool cancel = Mouse.current.rightButton.wasPressedThisFrame ||
+                      (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame);
+        if (cancel && isPlacing)
+        {
+            CancelPlacement();
+        }
+
         if (Mouse.current.leftButton.wasPressedThisFrame && cellUnderCursor != null)
         {
             HandleCellClicked(cellUnderCursor);
         }
     }
 
+    /// <summary>Dipanggil kartu tower di UI nanti (Prioritas 4) untuk masuk mode penempatan.</summary>
     public void SetSelectedTowerData(TowerData newTowerData)
     {
         selectedTowerData = newTowerData;
+        isPlacing = newTowerData != null;
+    }
+
+    public void CancelPlacement()
+    {
+        isPlacing = false;
     }
 
     private void HandleHotbarShortcuts()
@@ -164,7 +207,15 @@ public class GridManager : MonoBehaviour
             return;
         }
 
+        // Tekan slot yang sama lagi = batal
+        if (isPlacing && selectedTowerData == towerHotbar[index])
+        {
+            CancelPlacement();
+            return;
+        }
+
         selectedTowerData = towerHotbar[index];
+        isPlacing = true;
         Debug.Log($"Tower dipilih [Slot {index + 1}]: {selectedTowerData.towerName} (Cost: {selectedTowerData.cost})");
     }
 
@@ -215,19 +266,32 @@ public class GridManager : MonoBehaviour
         Vector2 mousePosition = Mouse.current.position.ReadValue();
         Ray ray = mainCamera.ScreenPointToRay(mousePosition);
 
-        bool hasHit = Physics.Raycast(
-            ray,
-            out RaycastHit hit,
-            raycastDistance,
-            gridLayerMask
-        );
-
-        if (!hasHit)
+        // RaycastAll: collider tower / musuh / player tidak boleh "menutupi" tile di bawahnya
+        RaycastHit[] hits = Physics.RaycastAll(ray, raycastDistance, gridLayerMask, QueryTriggerInteraction.Ignore);
+        if (hits.Length == 0)
         {
             return null;
         }
 
-        return hit.collider.GetComponentInParent<GridCell>();
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+        foreach (RaycastHit hit in hits)
+        {
+            GridCell cell = hit.collider.GetComponentInParent<GridCell>();
+            if (cell != null)
+            {
+                return cell;
+            }
+
+            // Kursor di badan tower -> anggap memilih tile tempat tower berdiri (penting untuk merge)
+            Tower tower = hit.collider.GetComponentInParent<Tower>();
+            if (tower != null && tower.OccupiedCell != null)
+            {
+                return tower.OccupiedCell;
+            }
+        }
+
+        return null;
     }
 
     private void UpdateHover(GridCell cellUnderCursor)
@@ -432,7 +496,20 @@ public class GridManager : MonoBehaviour
         }
 
         SelectCell(clickedCell);
-        TryPlaceOrMergeTower(clickedCell);
+
+        if (!IsPlacing)
+        {
+            return;
+        }
+
+        bool placed = TryPlaceOrMergeTower(clickedCell);
+
+        // Satu kali pasang lalu selesai (seperti drag kartu di GDD). Tahan Shift untuk pasang berulang.
+        bool keepPlacing = Keyboard.current != null && Keyboard.current.shiftKey.isPressed;
+        if (placed && !keepPlacing)
+        {
+            CancelPlacement();
+        }
     }
 
     private void SelectCell(GridCell newCell)
@@ -446,12 +523,12 @@ public class GridManager : MonoBehaviour
         selectedCell.SelectCell();
     }
 
-    private void TryPlaceOrMergeTower(GridCell targetCell)
+    private bool TryPlaceOrMergeTower(GridCell targetCell)
     {
         if (towerPrefab == null || selectedTowerData == null || insightManager == null)
         {
             Debug.LogError("Pastikan Tower Prefab, Selected Tower Data, dan Insight Manager sudah dipasang di GridManager.");
-            return;
+            return false;
         }
 
         // Jika tile sudah ada tower yang sama & masih bisa naik tier -> Merge
@@ -463,11 +540,11 @@ public class GridManager : MonoBehaviour
                     $"Insight tidak cukup untuk merge {selectedTowerData.towerName}. " +
                     $"Butuh {selectedTowerData.cost}, tersedia {insightManager.CurrentInsight}."
                 );
-                return;
+                return false;
             }
 
             targetCell.OccupyingTower.TryMergeUpgrade();
-            return;
+            return true;
         }
 
         // Jika bukan merge, cek apakah tile valid untuk deploy baru
@@ -477,7 +554,7 @@ public class GridManager : MonoBehaviour
                 $"Tidak bisa pasang {selectedTowerData.towerName} di Cell ({targetCell.Row}, {targetCell.Column}) " +
                 $"[{targetCell.Type}] (Occupied: {targetCell.IsOccupied})."
             );
-            return;
+            return false;
         }
 
         if (!insightManager.TrySpendInsight(selectedTowerData.cost))
@@ -486,7 +563,7 @@ public class GridManager : MonoBehaviour
                 $"Insight tidak cukup untuk pasang {selectedTowerData.towerName}. " +
                 $"Butuh {selectedTowerData.cost}, tersedia {insightManager.CurrentInsight}."
             );
-            return;
+            return false;
         }
 
         Vector3 towerPosition = targetCell.transform.position + Vector3.up * towerHeightOffset;
@@ -500,6 +577,7 @@ public class GridManager : MonoBehaviour
 
         newTower.Setup(targetCell, selectedTowerData, cellSize);
         targetCell.PlaceTower(newTower);
+        return true;
     }
 
     public GridCell GetCell(int row, int column)
