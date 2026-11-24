@@ -32,6 +32,38 @@ public class TowerData : ScriptableObject
     [Tooltip("Area aura heal (GDD: T2 = 9 grid, T3 = 13 grid)")]
     public AreaPattern auraArea = AreaPattern.None;
 
+    [Header("Barrier (Red)")]
+    [Tooltip("GDD merge effect: kebal damage selama X detik setelah merge (T2 = 2, T3 = 5)")]
+    public float mergeImmunityDuration = 0f;
+
+    [Header("Trap (Orange)")]
+    [Tooltip("Area ledakan saat musuh menginjak trap")]
+    public AreaPattern trapDamageArea = AreaPattern.Square9;
+    [Tooltip("Perlambatan musuh 0-1 (0.25 = 25% lebih lambat). GDD: T2 '-5 speed', T3 '-15 speed'")]
+    [Range(0f, 0.9f)] public float slowPercent = 0f;
+    public float slowDuration = 2f;
+
+    [Header("Insight Generator (Yellow)")]
+    [Tooltip("Insight per tick. Interval tick = Action Cooldown (GDD: 3 / 2 / 1 detik)")]
+    public int insightPerTick = 0;
+    [Tooltip("GDD merge effect: langsung dapat insight saat merge (T2 = 3, T3 = 7)")]
+    public int mergeInsightBonus = 0;
+
+    [Header("Attacker (Blue / Purple)")]
+    [Tooltip("Centang untuk Purple: semua musuh dalam jangkauan terkena (AoE)")]
+    public bool isAreaAttack = false;
+    [Tooltip("GDD merge effect Blue: tambahan damage per serangan (T2 = 10, T3 = 20)")]
+    public float bonusDamagePerAttack = 0f;
+
+    [Header("Support Buff (Purple)")]
+    [Tooltip("GDD merge effect Purple: +ATK untuk tower di sekitar (T2 = 5, T3 = 15)")]
+    public float buffAttack = 0f;
+    [Tooltip("GDD merge effect Purple: +HP maksimal untuk tower di sekitar (T2 = 5, T3 = 15)")]
+    public float buffHP = 0f;
+    public AreaPattern buffArea = AreaPattern.Square9;
+
+    public bool GivesBuff => buffAttack > 0f || buffHP > 0f;
+
     [Header("Upgrade / Merge")]
     public TowerData nextTier; // Kosongkan jika sudah Tier 3
 
@@ -58,6 +90,8 @@ public class TowerData : ScriptableObject
         {
             case TowerRole.Attacker:
                 return GridArea.GetOffsets(AreaPattern.Square25); // GDD belum menulis range, default 5x5
+            case TowerRole.Trap:
+                return GridArea.GetOffsets(trapDamageArea); // area ledakan trap
             case TowerRole.Healer:
                 // Beam healer global; yang ditampilkan sebagai area adalah aura heal (T2/T3)
                 return auraArea != AreaPattern.None

@@ -167,6 +167,8 @@ public class GridManager : MonoBehaviour
             CancelPlacement();
         }
 
+        HandleDragMerge(cellUnderCursor);
+
         if (Mouse.current.leftButton.wasPressedThisFrame && cellUnderCursor != null)
         {
             HandleCellClicked(cellUnderCursor);
@@ -183,6 +185,64 @@ public class GridManager : MonoBehaviour
     public void CancelPlacement()
     {
         isPlacing = false;
+    }
+
+    // ------------------------------------------------------------------
+    // Drag-merge (GDD: "drag the same kind tower and place it in the tower you want to upgrade")
+    // ------------------------------------------------------------------
+
+    private Tower dragSource;
+    public Tower DragSource => dragSource;
+
+    private void HandleDragMerge(GridCell cellUnderCursor)
+    {
+        Mouse mouse = Mouse.current;
+
+        // Mulai drag: tekan kiri di atas tower yang sudah terpasang (bukan sedang mode menaruh tower)
+        if (mouse.leftButton.wasPressedThisFrame && !IsPlacing &&
+            cellUnderCursor != null && cellUnderCursor.OccupyingTower != null)
+        {
+            dragSource = cellUnderCursor.OccupyingTower;
+            return;
+        }
+
+        if (dragSource == null)
+        {
+            return;
+        }
+
+        // Batal drag
+        if (mouse.rightButton.wasPressedThisFrame ||
+            (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame))
+        {
+            dragSource = null;
+            return;
+        }
+
+        if (!mouse.leftButton.wasReleasedThisFrame)
+        {
+            return;
+        }
+
+        Tower source = dragSource;
+        dragSource = null;
+
+        if (source == null || cellUnderCursor == null || cellUnderCursor == source.OccupiedCell)
+        {
+            return; // dilepas di tempat sendiri = cuma klik biasa
+        }
+
+        Tower target = cellUnderCursor.OccupyingTower;
+        if (target != null && target.CanMergeWith(source.Data))
+        {
+            // Gratis: kedua tower sudah dibayar saat dipasang. Tower sumber dilebur ke target.
+            source.ConsumeForMerge();
+            target.TryMergeUpgrade();
+        }
+        else
+        {
+            Debug.Log("Drag-merge gagal: harus tower yang sama persis (warna & tier) dan belum tier 3.");
+        }
     }
 
     private void HandleHotbarShortcuts()

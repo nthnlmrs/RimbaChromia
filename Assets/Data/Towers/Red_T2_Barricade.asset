@@ -24,6 +24,7 @@ MonoBehaviour:
   actionCooldown: 1
   isGlobalRange: 0
   rangeOffsets: []
-  nextTier: {fileID: 0}
+  mergeImmunityDuration: 2
+  nextTier: {fileID: 11400000, guid: bd9a000ceee2d463ca01ed54d1dea677, type: 2}
   placeholderMaterial: {fileID: 0}
   placeholderScale: {x: 0.85, y: 1.1, z: 0.85}

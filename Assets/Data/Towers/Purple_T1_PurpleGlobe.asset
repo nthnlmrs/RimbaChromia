@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f97be3e8449cbe1438766bbe3838ed5a, type: 3}
+  m_Name: Purple_T1_PurpleGlobe
+  m_EditorClassIdentifier: Assembly-CSharp::TowerData
+  towerName: Purple Globe
+  color: 5
+  role: 4
+  tier: 1
+  cost: 12
+  canPlaceOnBarePath: 0
+  canPlaceOnGrass: 1
+  maxHP: 100
+  attackDamage: 20
+  actionCooldown: 3
+  isGlobalRange: 0
+  rangeOffsets: []
+  fireReducePerShot: 0
+  auraHealPerSecond: 0
+  auraArea: 0
+  mergeImmunityDuration: 0
+  trapDamageArea: 3
+  slowPercent: 0
+  slowDuration: 2
+  insightPerTick: 0
+  mergeInsightBonus: 0
+  isAreaAttack: 1
+  bonusDamagePerAttack: 0
+  buffAttack: 0
+  buffHP: 0
+  buffArea: 3
+  nextTier: {fileID: 11400000, guid: 94f542783bf2ef085c4f82d806d0efe8, type: 2}
+  towerSprite: {fileID: 0}
+  placeholderMaterial: {fileID: 0}
+  placeholderScale: {x: 0.7, y: 0.8, z: 0.7}

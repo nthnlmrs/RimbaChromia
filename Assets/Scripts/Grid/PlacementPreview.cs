@@ -82,7 +82,11 @@ public class PlacementPreview : MonoBehaviour
 
         GridCell hovered = grid.HoveredCell;
 
-        if (grid.IsPlacing)
+        if (grid.DragSource != null)
+        {
+            ShowDragMergePreview(grid.DragSource, hovered);
+        }
+        else if (grid.IsPlacing)
         {
             ShowPlacementPreview(grid.SelectedTowerData, hovered);
         }
@@ -144,6 +148,51 @@ public class PlacementPreview : MonoBehaviour
         SetOverlay(cell, target);
 
         ShowGhost(cell, previewData, ok);
+    }
+
+    private void ShowDragMergePreview(Tower source, GridCell cell)
+    {
+        TowerData data = source.Data;
+        GridCell sourceCell = source.OccupiedCell;
+        if (data == null || sourceCell == null)
+        {
+            HideAll();
+            return;
+        }
+
+        bool overSource = cell == null || cell == sourceCell;
+        bool canMerge = !overSource && cell.OccupyingTower != null && cell.OccupyingTower.CanMergeWith(data);
+
+        string newKey = $"drag-{source.GetInstanceID()}-{(cell != null ? cell.GetInstanceID() : 0)}-{canMerge}";
+        if (newKey == lastKey) return;
+        lastKey = newKey;
+
+        // Area yang ditampilkan: hasil setelah merge (kalau valid), kalau tidak area tower sumber
+        GridCell center = canMerge ? cell : sourceCell;
+        TowerData shown = canMerge && data.nextTier != null ? data.nextTier : data;
+        CollectRange(center, shown);
+        rangeMat.color = WithAlpha(GetTowerColor(shown.color), rangeAlpha);
+
+        foreach (GridCell c in overlays.Keys)
+        {
+            SetOverlay(c, rangeBuffer.Contains(c) ? OverlayKind.Range : OverlayKind.Dim);
+        }
+
+        // Tandai semua tower yang bisa jadi tujuan merge
+        foreach (GridCell c in overlays.Keys)
+        {
+            if (c != sourceCell && c.OccupyingTower != null && c.OccupyingTower.CanMergeWith(data))
+            {
+                SetOverlay(c, OverlayKind.Merge);
+            }
+        }
+
+        if (!overSource && !canMerge)
+        {
+            SetOverlay(cell, OverlayKind.Invalid);
+        }
+
+        SetGhostVisible(false);
     }
 
     private void ShowPlacedTowerRange(GridCell cell)

@@ -10,8 +10,21 @@ public class InsightManager : MonoBehaviour
     [SerializeField] private int passiveRegenAmount = 1;
     [SerializeField] private bool isFreeCostMode = false;
 
+    public static InsightManager Instance { get; private set; }
+
     private int currentInsight;
     private float regenTimer;
+
+    private void Awake()
+    {
+        Instance = this;
+        currentInsight = Mathf.Clamp(initialInsight, 0, maxInsight);
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this) Instance = null;
+    }
 
     public int CurrentInsight => currentInsight;
     public int MaxInsight => maxInsight;

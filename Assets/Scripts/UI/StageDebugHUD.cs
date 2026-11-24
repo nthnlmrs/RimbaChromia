@@ -56,7 +56,7 @@ public class StageDebugHUD : MonoBehaviour
         float width = 420f * scale;
         float line = 28f * scale;
 
-        GUILayout.BeginArea(new Rect(16f * scale, 16f * scale, width * 1.35f, line * 12), boxStyle);
+        GUILayout.BeginArea(new Rect(16f * scale, 16f * scale, width * 1.5f, line * 15), boxStyle);
 
         StageData stage = waves.CurrentStage;
         GUILayout.Label($"<b>{(stage != null ? stage.stageName : "No Stage")}</b>", labelStyle);
@@ -91,7 +91,8 @@ public class StageDebugHUD : MonoBehaviour
             GUILayout.Label($"Tile terbakar: <b>{FireManager.Instance.BurningCount}</b>{paused}", labelStyle);
         }
 
-        GUILayout.Label("<i>1 Red 2 Blue 3 Green | Klik kanan/Esc batal | Shift+klik pasang berulang</i>", labelStyle);
+        GUILayout.Label("<i>1 Red 2 Orange 3 Yellow 4 Green 5 Blue 6 Purple</i>", labelStyle);
+        GUILayout.Label("<i>Klik kanan/Esc batal | Shift+klik pasang berulang | Drag tower ke tower sama = merge</i>", labelStyle);
         GUILayout.Label("<i>F api  X padam  N skip</i>", labelStyle);
         GUILayout.EndArea();
 

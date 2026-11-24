@@ -21,6 +21,23 @@ public class Enemy : MonoBehaviour
 
     private float currentHP;
     private float attackTimer;
+
+    // Slow dari Orange trap T2/T3. Tidak ditumpuk: yang paling kuat yang berlaku.
+    private float slowPercent;
+    private float slowTimer;
+
+    public bool IsSlowed => slowTimer > 0f;
+
+    public void ApplySlow(float percent, float duration)
+    {
+        if (percent <= 0f || duration <= 0f) return;
+
+        if (!IsSlowed || percent >= slowPercent)
+        {
+            slowPercent = Mathf.Clamp01(percent);
+        }
+        slowTimer = Mathf.Max(slowTimer, duration);
+    }
     private GridManager gridManager;
     private WallHealth wallHealth;
     private List<Vector2Int> pathCoords;
@@ -153,13 +170,23 @@ public class Enemy : MonoBehaviour
         return false;
     }
 
+    private float CurrentMoveSpeed()
+    {
+        if (slowTimer > 0f)
+        {
+            slowTimer -= Time.deltaTime;
+            return moveSpeed * (1f - slowPercent);
+        }
+        return moveSpeed;
+    }
+
     private void MoveToward(GridCell targetCell)
     {
         Vector3 destination = targetCell.transform.position + Vector3.up * heightOffset;
         transform.position = Vector3.MoveTowards(
             transform.position,
             destination,
-            moveSpeed * Time.deltaTime
+            CurrentMoveSpeed() * Time.deltaTime
         );
 
         if (Vector3.Distance(transform.position, destination) <= 0.02f)

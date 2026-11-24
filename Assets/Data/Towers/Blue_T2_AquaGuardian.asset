@@ -24,7 +24,8 @@ MonoBehaviour:
   actionCooldown: 1
   isGlobalRange: 0
   rangeOffsets: []
-  nextTier: {fileID: 0}
+  bonusDamagePerAttack: 10
+  nextTier: {fileID: 11400000, guid: 2cd835f75f1a813a00af17945546e8b7, type: 2}
   towerSprite: {fileID: 0}
   placeholderMaterial: {fileID: 0}
   placeholderScale: {x: 0.85, y: 1.1, z: 0.85}

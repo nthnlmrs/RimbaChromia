@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f97be3e8449cbe1438766bbe3838ed5a, type: 3}
+  m_Name: Yellow_T1_YellowBeacon
+  m_EditorClassIdentifier: Assembly-CSharp::TowerData
+  towerName: Yellow Beacon
+  color: 2
+  role: 2
+  tier: 1
+  cost: 5
+  canPlaceOnBarePath: 0
+  canPlaceOnGrass: 1
+  maxHP: 75
+  attackDamage: 0
+  actionCooldown: 3
+  isGlobalRange: 0
+  rangeOffsets: []
+  fireReducePerShot: 0
+  auraHealPerSecond: 0
+  auraArea: 0
+  mergeImmunityDuration: 0
+  trapDamageArea: 3
+  slowPercent: 0
+  slowDuration: 2
+  insightPerTick: 1
+  mergeInsightBonus: 0
+  isAreaAttack: 0
+  bonusDamagePerAttack: 0
+  buffAttack: 0
+  buffHP: 0
+  buffArea: 3
+  nextTier: {fileID: 11400000, guid: b86fabe07fd9358dfe0a29212b9338ab, type: 2}
+  towerSprite: {fileID: 0}
+  placeholderMaterial: {fileID: 0}
+  placeholderScale: {x: 0.7, y: 0.8, z: 0.7}

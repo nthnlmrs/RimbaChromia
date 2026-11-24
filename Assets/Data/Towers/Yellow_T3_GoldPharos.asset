@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f97be3e8449cbe1438766bbe3838ed5a, type: 3}
+  m_Name: Yellow_T3_GoldPharos
+  m_EditorClassIdentifier: Assembly-CSharp::TowerData
+  towerName: Gold Pharos
+  color: 2
+  role: 2
+  tier: 3
+  cost: 15
+  canPlaceOnBarePath: 0
+  canPlaceOnGrass: 1
+  maxHP: 250
+  attackDamage: 0
+  actionCooldown: 1
+  isGlobalRange: 0
+  rangeOffsets: []
+  fireReducePerShot: 0
+  auraHealPerSecond: 0
+  auraArea: 0
+  mergeImmunityDuration: 0
+  trapDamageArea: 3
+  slowPercent: 0
+  slowDuration: 2
+  insightPerTick: 1
+  mergeInsightBonus: 7
+  isAreaAttack: 0
+  bonusDamagePerAttack: 0
+  buffAttack: 0
+  buffHP: 0
+  buffArea: 3
+  nextTier: {fileID: 0}
+  towerSprite: {fileID: 0}
+  placeholderMaterial: {fileID: 0}
+  placeholderScale: {x: 1, y: 1.4, z: 1}

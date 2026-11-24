@@ -684,8 +684,11 @@ MonoBehaviour:
   selectedTowerData: {fileID: 11400000, guid: d175b4119ffbefa438814a6b7c0b1898, type: 2}
   towerHotbar:
   - {fileID: 11400000, guid: d175b4119ffbefa438814a6b7c0b1898, type: 2}
-  - {fileID: 11400000, guid: b074253844c2a4743a897d33264d09a5, type: 2}
+  - {fileID: 11400000, guid: eeabcf9499d2dd205df3faf9679f359d, type: 2}
+  - {fileID: 11400000, guid: 4902c4e56fa0cf2aef4ed9c4fd62d585, type: 2}
   - {fileID: 11400000, guid: 89acca9d02704abcb0337179d5a6ae23, type: 2}
+  - {fileID: 11400000, guid: b074253844c2a4743a897d33264d09a5, type: 2}
+  - {fileID: 11400000, guid: 82e24ff46cad5d27b1d0873cbdc92321, type: 2}
   towerPrefab: {fileID: 7221723420008739101, guid: d19230f8318483f489a95fb6df586b93, type: 3}
   towerHeightOffset: 0.575
   gridLayerMask:
@@ -943,7 +946,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d965c51b1ae28e7916ad7790ec473cd5, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WaveManager
   stages:
   - {fileID: 11400000, guid: 3557a61d3ee8154ab3726e5709b2f21f, type: 2}
