@@ -91,6 +91,7 @@ public static class UIKit
     {
         RectTransform rt = Rect(name, parent);
         TextMeshProUGUI tmp = rt.gameObject.AddComponent<TextMeshProUGUI>();
+        if (MainFont != null) tmp.font = MainFont;
         tmp.text = text;
         tmp.fontSize = size;
         tmp.alignment = align;
@@ -153,6 +154,58 @@ public static class UIKit
                 whiteSprite.name = "UIKit_White";
             }
             return whiteSprite;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Font utama UI: Jersey 25
+    // ------------------------------------------------------------------
+
+    /// <summary>Lokasi font di Resources (tanpa ekstensi): Assets/Resources/Fonts/Jersey25-Regular.ttf</summary>
+    public const string MainFontResource = "Fonts/Jersey25-Regular";
+
+    private static TMP_FontAsset mainFont;
+    private static bool mainFontMissing;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetFontOnPlay()
+    {
+        mainFontMissing = false; // cek ulang tiap Play (mungkin file font baru ditambahkan)
+    }
+
+    /// <summary>
+    /// Font utama semua teks UI. Dibuat otomatis saat runtime dari file TTF di Resources,
+    /// jadi tidak perlu membuat TMP Font Asset manual. Kalau file belum ada, pakai font default TMP.
+    /// </summary>
+    public static TMP_FontAsset MainFont
+    {
+        get
+        {
+            if (mainFont != null || mainFontMissing) return mainFont;
+
+            Font source = Resources.Load<Font>(MainFontResource);
+            if (source == null)
+            {
+                mainFontMissing = true;
+                Debug.LogWarning($"Font UI '{MainFontResource}' tidak ditemukan di Resources. Pakai font default TMP.");
+                return null;
+            }
+
+            mainFont = TMP_FontAsset.CreateFontAsset(source);
+            if (mainFont == null)
+            {
+                mainFontMissing = true;
+                return null;
+            }
+
+            mainFont.name = "Jersey25 (runtime)";
+
+            // Huruf yang tidak ada di Jersey 25 (misal simbol khusus) diambil dari font default
+            if (TMP_Settings.defaultFontAsset != null)
+            {
+                mainFont.fallbackFontAssetTable = new System.Collections.Generic.List<TMP_FontAsset> { TMP_Settings.defaultFontAsset };
+            }
+            return mainFont;
         }
     }
 
