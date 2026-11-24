@@ -194,7 +194,10 @@ public class Tower : MonoBehaviour
         if (insight != null)
         {
             insight.AddInsight(data.insightPerTick);
-            TowerVfx.Pulse(transform.position, cellSize * 0.6f, TowerVfx.ColorOf(data.color), 0.3f);
+
+            // Kilatan di atas kepala tower supaya tidak tertutup badan silinder placeholder
+            float top = transform.position.y + transform.localScale.y + 0.05f;
+            TowerVfx.PulseAtHeight(transform.position, top, cellSize * 1.4f, new Color(1f, 0.95f, 0.3f), 0.5f);
         }
     }
 

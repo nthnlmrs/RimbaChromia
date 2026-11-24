@@ -33,8 +33,14 @@ public static class TowerVfx
     /// <summary>Gelombang datar yang membesar lalu memudar di atas tile.</summary>
     public static void Pulse(Vector3 center, float size, Color color, float duration)
     {
+        PulseAtHeight(center, 0.12f, size, color, duration);
+    }
+
+    /// <summary>Sama seperti Pulse, tapi di ketinggian tertentu (misal di atas kepala tower).</summary>
+    public static void PulseAtHeight(Vector3 center, float height, float size, Color color, float duration)
+    {
         GameObject go = new GameObject("Vfx_Pulse");
-        go.transform.position = new Vector3(center.x, 0.12f, center.z);
+        go.transform.position = new Vector3(center.x, height, center.z);
 
         go.AddComponent<MeshFilter>().sharedMesh = GetFlatQuad();
         MeshRenderer mr = go.AddComponent<MeshRenderer>();

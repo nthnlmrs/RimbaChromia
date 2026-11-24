@@ -37,7 +37,12 @@ public class Enemy : MonoBehaviour
             slowPercent = Mathf.Clamp01(percent);
         }
         slowTimer = Mathf.Max(slowTimer, duration);
+        ApplyTint(); // tanda visual: musuh jadi pucat kebiruan selama diperlambat
     }
+
+    private Color baseColor = new Color(0f, 0.75f, 1f);
+    private static readonly Color SlowTint = new Color(0.75f, 0.9f, 1f);
+
     private GridManager gridManager;
     private WallHealth wallHealth;
     private List<Vector2Int> pathCoords;
@@ -91,6 +96,16 @@ public class Enemy : MonoBehaviour
 
     private void Update()
     {
+        if (slowTimer > 0f)
+        {
+            slowTimer -= Time.deltaTime;
+            if (slowTimer <= 0f)
+            {
+                slowTimer = 0f;
+                ApplyTint(); // kembali ke warna normal
+            }
+        }
+
         if (gridManager == null || pathCoords == null || targetIndex >= pathCoords.Count)
         {
             return;
@@ -141,15 +156,22 @@ public class Enemy : MonoBehaviour
         }
 
         // Warna placeholder supaya tiap jenis musuh bisa dibedakan sebelum sprite final masuk
+        baseColor = data.placeholderColor;
+        ApplyTint();
+    }
+
+    private void ApplyTint()
+    {
         Renderer meshRenderer = GetComponentInChildren<Renderer>();
-        if (meshRenderer != null)
-        {
-            MaterialPropertyBlock block = new MaterialPropertyBlock();
-            meshRenderer.GetPropertyBlock(block);
-            block.SetColor("_BaseColor", data.placeholderColor);
-            block.SetColor("_Color", data.placeholderColor);
-            meshRenderer.SetPropertyBlock(block);
-        }
+        if (meshRenderer == null) return;
+
+        Color color = IsSlowed ? Color.Lerp(baseColor, SlowTint, 0.65f) : baseColor;
+
+        MaterialPropertyBlock block = new MaterialPropertyBlock();
+        meshRenderer.GetPropertyBlock(block);
+        block.SetColor("_BaseColor", color);
+        block.SetColor("_Color", color);
+        meshRenderer.SetPropertyBlock(block);
     }
 
     private bool IsBlockedByBarrier(GridCell cell, out Tower barrierTower)
@@ -172,12 +194,7 @@ public class Enemy : MonoBehaviour
 
     private float CurrentMoveSpeed()
     {
-        if (slowTimer > 0f)
-        {
-            slowTimer -= Time.deltaTime;
-            return moveSpeed * (1f - slowPercent);
-        }
-        return moveSpeed;
+        return IsSlowed ? moveSpeed * (1f - slowPercent) : moveSpeed;
     }
 
     private void MoveToward(GridCell targetCell)
