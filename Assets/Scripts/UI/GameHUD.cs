@@ -103,6 +103,11 @@ public class GameHUD : MonoBehaviour
             info.gameObject.AddComponent<TowerInfoPanel>().Build(grid, root);
         }
 
+        TextMeshProUGUI controls = UIKit.Label("Controls Hint", root,
+            "WASD geser kamera  |  Scroll zoom\nR reset kamera  |  Esc jeda", 17f,
+            TextAlignmentOptions.BottomLeft, new Color(1f, 1f, 1f, 0.6f));
+        UIKit.Place(controls.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(16f, 10f), new Vector2(420f, 48f));
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         TextMeshProUGUI debugHint = UIKit.Label("Debug Hint", root,
             "Debug: F api  X padam  P jeda api  N skip", 16f, TextAlignmentOptions.BottomRight, new Color(1f, 1f, 1f, 0.45f));

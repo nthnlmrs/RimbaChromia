@@ -95,6 +95,13 @@ public class GridManager : MonoBehaviour
         {
             gameObject.AddComponent<PlacementPreview>();
         }
+
+        // Kamera spectator (WASD geser, scroll zoom, R reset), tanpa rotasi
+        Camera cam = Camera.main;
+        if (cam != null && cam.GetComponent<CameraController>() == null)
+        {
+            cam.gameObject.AddComponent<CameraController>();
+        }
     }
 
     private void OnDestroy()
