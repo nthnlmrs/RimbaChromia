@@ -22,6 +22,11 @@ public class Enemy : MonoBehaviour
     private float currentHP;
     private float attackTimer;
 
+    // Serangan jarak jauh (Walking Furnace, Fire Spitter, Pyro Shooter, Flame Director)
+    private float rangedTimer;
+    private float stopTimer;
+    public bool IsAttacking => stopTimer > 0f;
+
     // Slow dari Orange trap T2/T3. Tidak ditumpuk: yang paling kuat yang berlaku.
     private float slowPercent;
     private float slowTimer;
@@ -124,9 +129,18 @@ public class Enemy : MonoBehaviour
             return;
         }
 
+        if (stopTimer > 0f)
+        {
+            stopTimer -= Time.deltaTime;
+        }
+
+        bool ranged = data != null && data.rangedAttack;
+
         if (IsBlockedByBarrier(targetCell, out Tower barrierTower))
         {
-            AttackTower(barrierTower);
+            // Dihalangi Red: musuh jarak jauh tetap menembak (kecuali Fire Spitter), yang lain memukul Red
+            if (ranged && data.canAttackWhileBlocked) TickRangedAttack();
+            else AttackTower(barrierTower);
             return;
         }
 
@@ -136,8 +150,158 @@ public class Enemy : MonoBehaviour
             return;
         }
 
+        if (ranged)
+        {
+            TickRangedAttack();
+        }
+
+        // GDD: berhenti berjalan setiap kali melempar / menyembur
+        if (stopTimer > 0f)
+        {
+            return;
+        }
+
         attackTimer = 0f;
         MoveToward(targetCell);
+    }
+
+    // ------------------------------------------------------------------
+    // Serangan jarak jauh
+    // ------------------------------------------------------------------
+
+    private static readonly List<Tower> towerBuffer = new List<Tower>();
+    private static readonly List<GridCell> grassBuffer = new List<GridCell>();
+    private static readonly List<GridCell> burningGrassBuffer = new List<GridCell>();
+
+    private void TickRangedAttack()
+    {
+        if (rangedTimer < attackCooldown)
+        {
+            rangedTimer += Time.deltaTime;
+            return;
+        }
+
+        // Tidak ada target = tetap siap, langsung menyerang begitu ada target
+        if (TryRangedAttack())
+        {
+            rangedTimer = 0f;
+            stopTimer = data.stopDuration;
+        }
+    }
+
+    /// <summary>Tile yang terakhir diinjak musuh (pusat jangkauan serangan).</summary>
+    private Vector2Int CurrentCoord()
+    {
+        return pathCoords[Mathf.Clamp(targetIndex - 1, 0, pathCoords.Count - 1)];
+    }
+
+    private bool TryRangedAttack()
+    {
+        Vector2Int center = CurrentCoord();
+        int radius = Mathf.Max(1, data.attackRadius);
+
+        towerBuffer.Clear();
+        grassBuffer.Clear();
+        burningGrassBuffer.Clear();
+
+        for (int r = -radius; r <= radius; r++)
+        {
+            for (int c = -radius; c <= radius; c++)
+            {
+                GridCell cell = gridManager.GetCell(center.x + r, center.y + c);
+                if (cell == null) continue;
+
+                if (cell.OccupyingTower != null) towerBuffer.Add(cell.OccupyingTower);
+
+                if (cell.IsFlammable)
+                {
+                    if (cell.IsOnFire) burningGrassBuffer.Add(cell);
+                    else grassBuffer.Add(cell);
+                }
+            }
+        }
+
+        // Tower: Red (Barrier) diutamakan (GDD: "tends to be targeted by enemies"), lalu yang terdekat
+        Vector3 me = transform.position;
+        towerBuffer.Sort((a, b) =>
+        {
+            bool aRed = a.Data != null && a.Data.role == TowerRole.Barrier;
+            bool bRed = b.Data != null && b.Data.role == TowerRole.Barrier;
+            if (aRed != bRed) return aRed ? -1 : 1;
+            return (a.transform.position - me).sqrMagnitude.CompareTo((b.transform.position - me).sqrMagnitude);
+        });
+
+        int towerCount = Mathf.Min(data.towersPerAttack, towerBuffer.Count);
+        int grassCount = data.grassTilesPerAttack;
+        if (data.grassOnlyIfNoTower && towerCount > 0) grassCount = 0;
+
+        if (towerCount == 0 && grassCount == 0) return false;
+
+        Vector3 launch = transform.position + Vector3.up * (transform.localScale.y * 0.5f);
+
+        for (int i = 0; i < towerCount; i++)
+        {
+            Tower target = towerBuffer[i];
+            GridCell targetCell = target.OccupiedCell;
+            LaunchAt(launch, targetCell, target);
+        }
+
+        // Rumput yang belum terbakar diutamakan, baru yang sudah terbakar
+        int launched = LaunchAtRandom(launch, grassBuffer, grassCount);
+        launched += LaunchAtRandom(launch, burningGrassBuffer, grassCount - launched);
+
+        return towerCount > 0 || launched > 0;
+    }
+
+    private int LaunchAtRandom(Vector3 launch, List<GridCell> pool, int count)
+    {
+        int launched = 0;
+        while (launched < count && pool.Count > 0)
+        {
+            int pick = Random.Range(0, pool.Count);
+            GridCell cell = pool[pick];
+            pool.RemoveAt(pick);
+            LaunchAt(launch, cell, null);
+            launched++;
+        }
+        return launched;
+    }
+
+    private void LaunchAt(Vector3 launch, GridCell cell, Tower towerTarget)
+    {
+        if (cell == null) return;
+
+        float damage = attackDamage;
+        EnemyData d = data;
+        Vector3 landing = cell.transform.position + Vector3.up * 0.2f;
+
+        TowerVfx.Lob(launch, landing, d.projectileColor, d.projectileFlightTime, () =>
+        {
+            // Tower kena damage kalau masih berdiri di tile itu
+            if (towerTarget != null && towerTarget.OccupiedCell == cell)
+            {
+                towerTarget.TakeDamage(damage);
+            }
+
+            FireManager fire = FireManager.Instance;
+            if (fire != null)
+            {
+                bool igniteCenter = towerTarget == null || d.igniteTowerTile;
+                if (igniteCenter) fire.Ignite(cell);
+
+                // Ledakan Flame Director: api menyebar di area, tower sekitar tidak terluka
+                if (d.explosionArea != AreaPattern.None && d.explosionArea != AreaPattern.Single && gridManager != null)
+                {
+                    foreach (GridCell near in gridManager.GetCellsInArea(cell.Row, cell.Column, d.explosionArea))
+                    {
+                        fire.Ignite(near);
+                    }
+                }
+            }
+
+            float size = d.explosionArea == AreaPattern.Plus5 || d.explosionArea == AreaPattern.Square9 ? 3f : 1.1f;
+            TowerVfx.Pulse(cell.transform.position, size, d.projectileColor, 0.45f);
+        });
     }
 
     private void ApplyData(EnemyData enemyData)
@@ -223,7 +387,6 @@ public class Enemy : MonoBehaviour
 
         attackTimer = 0f;
         tower.TakeDamage(attackDamage);
-        Debug.Log($"{gameObject.name} menyerang {tower.TowerName} ({attackDamage} dmg). Sisa HP Tower: {tower.CurrentHP}");
     }
 
     private void AttackWall()
@@ -250,7 +413,6 @@ public class Enemy : MonoBehaviour
         }
 
         currentHP = Mathf.Max(0f, currentHP - amount);
-        Debug.Log($"{gameObject.name} terkena {amount} dmg. Sisa HP: {currentHP}");
 
         if (currentHP <= 0f)
         {

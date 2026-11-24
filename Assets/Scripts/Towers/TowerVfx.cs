@@ -67,6 +67,23 @@ public static class TowerVfx
         go.AddComponent<VfxProjectile>().Init(target, damage);
     }
 
+    /// <summary>
+    /// Proyektil melengkung (batu api / bola api musuh). onLand dipanggil saat mendarat di 'to'.
+    /// </summary>
+    public static void Lob(Vector3 from, Vector3 to, Color color, float flightTime, System.Action onLand, float size = 0.28f)
+    {
+        GameObject go = new GameObject("Vfx_Lob");
+        go.transform.position = from;
+        go.transform.localScale = Vector3.one * size;
+
+        go.AddComponent<MeshFilter>().sharedMesh = GetSphere();
+        MeshRenderer mr = go.AddComponent<MeshRenderer>();
+        SetupRenderer(mr);
+        SetColor(mr, color);
+
+        go.AddComponent<VfxLob>().Init(from, to, flightTime, onLand);
+    }
+
     public static void SetColor(Renderer renderer, Color color)
     {
         MaterialPropertyBlock block = new MaterialPropertyBlock();
@@ -151,6 +168,42 @@ public class VfxPulse : MonoBehaviour
         Color c = color;
         c.a = Mathf.Lerp(0.6f, 0f, t);
         TowerVfx.SetColor(meshRenderer, c);
+    }
+}
+
+/// <summary>Proyektil parabola: terbang dari A ke B dalam waktu tetap, lalu jalankan onLand.</summary>
+public class VfxLob : MonoBehaviour
+{
+    private Vector3 from;
+    private Vector3 to;
+    private float duration;
+    private float elapsed;
+    private float arcHeight;
+    private System.Action onLand;
+
+    public void Init(Vector3 start, Vector3 end, float flightTime, System.Action landed)
+    {
+        from = start;
+        to = end;
+        duration = Mathf.Max(0.1f, flightTime);
+        onLand = landed;
+        arcHeight = 1f + Vector3.Distance(start, end) * 0.35f;
+    }
+
+    private void Update()
+    {
+        elapsed += Time.deltaTime;
+        float t = Mathf.Clamp01(elapsed / duration);
+
+        Vector3 pos = Vector3.Lerp(from, to, t);
+        pos.y += Mathf.Sin(t * Mathf.PI) * arcHeight;
+        transform.position = pos;
+
+        if (t >= 1f)
+        {
+            onLand?.Invoke();
+            Destroy(gameObject);
+        }
     }
 }
 

@@ -17,5 +17,16 @@ MonoBehaviour:
   attackDamage: 30
   attackCooldown: 5
   speed: 0
+  rangedAttack: 1
+  attackRadius: 2
+  towersPerAttack: 1
+  grassTilesPerAttack: 1
+  grassOnlyIfNoTower: 1
+  igniteTowerTile: 1
+  explosionArea: 1
+  stopDuration: 0.8
+  canAttackWhileBlocked: 1
+  projectileFlightTime: 0.9
+  projectileColor: {r: 1, g: 0.35, b: 0.05, a: 1}
   placeholderColor: {r: 0.35, g: 0.3, b: 0.3, a: 1}
   placeholderScale: {x: 0.95, y: 0.95, z: 0.95}
