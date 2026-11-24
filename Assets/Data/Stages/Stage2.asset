@@ -39,6 +39,10 @@ MonoBehaviour:
   spawnPointNames:
   - Kiri
   - Kanan
+  introDialogue: {fileID: 0}
+  outroDialogue: {fileID: 0}
+  freeCost: 0
+  isTutorial: 0
   prepTime: 15
   breakTime: 15
   waves:

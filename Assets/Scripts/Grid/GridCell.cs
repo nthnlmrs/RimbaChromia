@@ -177,9 +177,16 @@ public class GridCell : MonoBehaviour
         squashRoutine = null;
     }
 
+    /// <summary>Helai rumput di tile ini (dipakai GrassWind).</summary>
+    public System.Collections.Generic.IReadOnlyList<Transform> Decorations => decorations;
+
+    /// <summary>0 = rumput tegak, 1 = penyet penuh (ditindih tower).</summary>
+    public float SquashAmount { get; private set; }
+
     /// <summary>k = 0 tegak normal, k = 1 penyet penuh.</summary>
     private void ApplySquash(float k)
     {
+        SquashAmount = Mathf.Clamp01(k);
         for (int i = 0; i < decorations.Count; i++)
         {
             if (decorations[i] == null) continue;

@@ -29,6 +29,16 @@ public class StageData : ScriptableObject
     [Tooltip("Nama titik spawn, index 0 = karakter '1' di layout, index 1 = '2', dst.")]
     public string[] spawnPointNames = { "Kiri", "Kanan", "Tengah" };
 
+    [Header("Cerita & Aturan Khusus")]
+    [Tooltip("Visual novel sebelum stage dimulai (GDD: Opening sebelum Tutorial)")]
+    public DialogueData introDialogue;
+    [Tooltip("Visual novel setelah stage dimenangkan (GDD: Ending setelah Stage 3)")]
+    public DialogueData outroDialogue;
+    [Tooltip("GDD Tutorial: tower bisa dipasang & di-merge tanpa biaya")]
+    public bool freeCost = false;
+    [Tooltip("Tampilkan panduan Taduh langkah demi langkah")]
+    public bool isTutorial = false;
+
     [Header("Timing (GDD: 15 detik persiapan & 15 detik jeda antar wave)")]
     public float prepTime = 15f;
     public float breakTime = 15f;

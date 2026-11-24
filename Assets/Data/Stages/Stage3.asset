@@ -40,6 +40,10 @@ MonoBehaviour:
   - Kiri
   - Tengah
   - Kanan
+  introDialogue: {fileID: 0}
+  outroDialogue: {fileID: 11400000, guid: dfb28d343ccb9858edf9d1d99e47b8c2, type: 2}
+  freeCost: 0
+  isTutorial: 0
   prepTime: 15
   breakTime: 15
   waves:

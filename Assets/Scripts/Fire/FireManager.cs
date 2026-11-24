@@ -465,6 +465,7 @@ public class FireManager : MonoBehaviour
         float groundY = cell.transform.position.y - cell.transform.lossyScale.y * 0.5f;
         state.model = art.SpawnFitted(prefab, cell.transform.position, grid.CellSize, groundY, modelContainer, out _);
         state.model.name = $"Fire_L{level}_R{cell.Row}_C{cell.Column}";
+        state.model.AddComponent<FireTileAnimator>().Init(level); // lidah api berkedip, cahaya berdenyut, percikan bara
         state.modelLevel = level;
         cell.SetBaseVisible(false);
     }

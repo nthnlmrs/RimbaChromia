@@ -32,19 +32,26 @@ public class WaveManager : MonoBehaviour
     /// </summary>
     public static int SelectedStageIndex = -1;
 
+    /// <summary>Restart stage tidak perlu mengulang cerita intro.</summary>
+    private static bool skipIntroOnce;
+
+    /// <summary>Tutorial menahan hitung mundur sampai pemain selesai mengikuti panduan.</summary>
+    public bool HoldCountdown { get; set; }
+
     // Project ini mematikan Domain Reload (Enter Play Mode Options), jadi variabel static
     // TIDAK otomatis ter-reset saat Stop -> Play. Reset manual di sini setiap kali Play ditekan.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStaticsOnPlay()
     {
         SelectedStageIndex = -1;
+        skipIntroOnce = false;
         Instance = null;
     }
 
     [Header("Stages (urutan = Stage 1, 2, 3)")]
     [SerializeField] private StageData[] stages = new StageData[0];
 
-    [Tooltip("Stage yang dimainkan saat tekan Play. 1 = Stage 1, 2 = Stage 2, 3 = Stage 3")]
+    [Tooltip("Stage yang dimainkan saat tekan Play (urutan list Stages). Default: 1 = Tutorial, 2 = Stage 1, 3 = Stage 2, 4 = Stage 3")]
     [FormerlySerializedAs("startStageIndex")]
     [SerializeField, Min(1)] private int startStage = 1;
 
@@ -160,7 +167,30 @@ public class WaveManager : MonoBehaviour
             return;
         }
 
+        // GDD Tutorial: pasang & merge tower tanpa biaya
+        if (InsightManager.Instance != null)
+        {
+            InsightManager.Instance.SetFreeCostMode(currentStage.freeCost);
+        }
+
         Debug.Log($"=== {currentStage.stageName} dimulai: {TotalWaves} wave ===");
+
+        bool playIntro = currentStage.introDialogue != null && !skipIntroOnce;
+        skipIntroOnce = false;
+
+        if (playIntro)
+        {
+            // Cerita dulu (game di-pause), persiapan dimulai setelah cerita selesai
+            StoryPlayer.Play(currentStage.introDialogue, StartPreparation);
+        }
+        else
+        {
+            StartPreparation();
+        }
+    }
+
+    private void StartPreparation()
+    {
         EnterState(StageState.Preparing, currentStage.prepTime);
     }
 
@@ -170,6 +200,11 @@ public class WaveManager : MonoBehaviour
         {
             case StageState.Preparing:
             case StageState.Break:
+                if (HoldCountdown)
+                {
+                    break; // tutorial: tunggu pemain selesai mengikuti panduan
+                }
+
                 stateTimer -= Time.deltaTime;
 
                 bool skip = Keyboard.current != null && Keyboard.current[skipCountdownKey].wasPressedThisFrame;
@@ -285,6 +320,12 @@ public class WaveManager : MonoBehaviour
             EnterState(StageState.Victory, 0f);
             Debug.Log($"=== VICTORY! {currentStage.stageName} selesai ===");
             Time.timeScale = 0f;
+
+            // GDD: Ending (visual novel) setelah stage terakhir. Panel hasil muncul setelah cerita selesai.
+            if (currentStage.outroDialogue != null)
+            {
+                StoryPlayer.Play(currentStage.outroDialogue, null);
+            }
             return;
         }
 
@@ -326,6 +367,7 @@ public class WaveManager : MonoBehaviour
     public void RestartStage()
     {
         SelectedStageIndex = stageIndex;
+        skipIntroOnce = true;
         ReloadScene();
     }
 
@@ -338,7 +380,7 @@ public class WaveManager : MonoBehaviour
     /// <summary>Langsung mulai wave berikutnya tanpa menunggu hitung mundur (tombol "Mulai Sekarang").</summary>
     public void SkipCountdown()
     {
-        if (state == StageState.Preparing || state == StageState.Break)
+        if ((state == StageState.Preparing || state == StageState.Break) && !HoldCountdown)
         {
             StartWave(currentWaveIndex + 1);
         }

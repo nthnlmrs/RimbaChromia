@@ -55,6 +55,13 @@ public class InsightManager : MonoBehaviour
         }
     }
 
+    /// <summary>Dipakai stage Tutorial (GDD: pasang & merge tower tanpa biaya).</summary>
+    public void SetFreeCostMode(bool free)
+    {
+        isFreeCostMode = free;
+        OnInsightChanged?.Invoke(currentInsight, maxInsight);
+    }
+
     public bool HasEnoughInsight(int cost)
     {
         if (isFreeCostMode) return true;

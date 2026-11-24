@@ -320,7 +320,7 @@ public class PlacementPreview : MonoBehaviour
     {
         ghost = new GameObject("Tower Ghost");
         ghost.transform.SetParent(overlayRoot, false);
-        ghostSprite = SpriteBillboard.Create(ghost.transform, null, false);
+        ghostSprite = SpriteBillboard.Create(ghost.transform, null, false, SpriteBillboard.TowerGroundOffset);
         ghost.SetActive(false);
     }
 

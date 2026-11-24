@@ -3,17 +3,27 @@ using UnityEngine;
 
 /// <summary>
 /// Sprite 2D yang "berdiri" di dunia 3D (gaya 2.5D seperti Cult of the Lamb).
-/// - Diputar SEJAJAR bidang kamera (bukan tegak lurus tanah), jadi sprite selalu tampil utuh,
-///   tidak gepeng walau kamera miring & di-zoom.
-/// - Skala selalu seragam (1:1) dan PPU sama (64), jadi ukuran pixel tower & musuh konsisten.
-/// - Bayangan bulat lembut di kaki supaya karakter terasa menapak di tile 3D.
+/// - Diputar SEJAJAR bidang kamera, jadi sprite selalu tampil utuh (tidak gepeng) walau kamera miring & di-zoom.
+/// - Skala selalu seragam & PPU sama (64), jadi ukuran pixel tower & musuh konsisten.
+/// - Supaya terasa MENAPAK (tidak mengambang):
+///     * digambar sebagai cutout yang menulis depth -> helai rumput di depan kaki ikut menutupi,
+///     * menjatuhkan bayangan siluet sungguhan dari cahaya matahari scene,
+///     * bayangan kontak lembut tepat di kaki.
+/// Material ada di Resources/Sprites2D (SpriteCutout = URP Unlit, SpriteShadowCaster = URP Lit).
 /// Pivot sprite harus di tengah-bawah (sudah diatur di import setting sprite tower & musuh).
 /// </summary>
 public class SpriteBillboard : MonoBehaviour
 {
     private SpriteRenderer spriteRenderer;
-    private Transform shadow;
+    private SpriteRenderer shadowCaster;
+    private Transform contactShadow;
     private Camera cam;
+    private MaterialPropertyBlock block;
+    private Color tint = Color.white;
+    private bool translucent;
+
+    private static readonly int BaseMapId = Shader.PropertyToID("_BaseMap");
+    private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
     public SpriteRenderer Renderer => spriteRenderer;
 
@@ -28,31 +38,69 @@ public class SpriteBillboard : MonoBehaviour
         }
     }
 
-    public static SpriteBillboard Create(Transform parent, Sprite sprite, bool withShadow, float shadowSize = 0.7f)
+    /// <summary>Bayangan siluet dari cahaya matahari. Dimatikan: bayangan yang terpisah dari kaki justru memberi kesan melayang.</summary>
+    public static bool CastSilhouetteShadow = false;
+
+    /// <summary>Bayangan bulat di kaki. Dimatikan karena alasan yang sama.</summary>
+    public static bool UseContactShadow = false;
+
+    /// <summary>Posisi tanam default untuk tower: sedikit ke bawah permukaan & ke depan, supaya kaki menancap di tile.</summary>
+    public static readonly Vector3 TowerGroundOffset = new Vector3(0f, -0.1f, -0.15f);
+
+    /// <summary>Posisi tanam default untuk musuh.</summary>
+    public static readonly Vector3 EnemyGroundOffset = new Vector3(0f, -0.05f, -0.05f);
+
+    /// <param name="grounded">true = karakter di map (cutout, menulis depth). false = bayangan preview (transparan).</param>
+    /// <param name="groundOffset">
+    /// Geser sprite dari titik berdiri. Y negatif = DITANAM ke dalam tile: bagian kaki tertutup permukaan tile
+    /// (karena sprite menulis depth), jadi terlihat menancap, bukan menempel / melayang.
+    /// </param>
+    public static SpriteBillboard Create(Transform parent, Sprite sprite, bool grounded, Vector3 groundOffset = default, float shadowSize = 0.9f)
     {
         GameObject go = new GameObject("Sprite 2D");
         go.transform.SetParent(parent, false);
+        go.transform.localPosition = groundOffset;
 
         SpriteBillboard billboard = go.AddComponent<SpriteBillboard>();
+        billboard.block = new MaterialPropertyBlock();
         billboard.spriteRenderer = go.AddComponent<SpriteRenderer>();
         billboard.spriteRenderer.sprite = sprite;
         billboard.spriteRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         billboard.spriteRenderer.receiveShadows = false;
+        billboard.translucent = !grounded;
 
-        if (withShadow)
+        if (grounded && CastSilhouetteShadow)
         {
-            GameObject s = new GameObject("Shadow");
-            s.transform.SetParent(parent, false);
-            s.transform.localPosition = new Vector3(0f, 0.012f, 0f);
-            s.transform.localScale = new Vector3(shadowSize, 1f, shadowSize * 0.6f);
-            s.AddComponent<MeshFilter>().sharedMesh = TowerVfx.FlatQuad;
-            MeshRenderer mr = s.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = ShadowMaterial;
-            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            mr.receiveShadows = false;
-            billboard.shadow = s.transform;
+            // Bayangan siluet sungguhan (renderer khusus, tidak terlihat, hanya menjatuhkan bayangan)
+            Material shadowMat = SpriteMaterials.ShadowCaster;
+            if (shadowMat != null)
+            {
+                GameObject s = new GameObject("Shadow Caster");
+                s.transform.SetParent(go.transform, false);
+                billboard.shadowCaster = s.AddComponent<SpriteRenderer>();
+                billboard.shadowCaster.sprite = sprite;
+                billboard.shadowCaster.sharedMaterial = shadowMat;
+                billboard.shadowCaster.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
+                billboard.shadowCaster.receiveShadows = false;
+            }
         }
 
+        if (grounded && UseContactShadow)
+        {
+            // Bayangan kontak lembut di kaki
+            GameObject c = new GameObject("Contact Shadow");
+            c.transform.SetParent(parent, false);
+            c.transform.localPosition = new Vector3(0f, 0.012f, 0f);
+            c.transform.localScale = new Vector3(shadowSize, 1f, shadowSize * 0.55f);
+            c.AddComponent<MeshFilter>().sharedMesh = TowerVfx.FlatQuad;
+            MeshRenderer mr = c.AddComponent<MeshRenderer>();
+            mr.sharedMaterial = ContactShadowMaterial;
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            mr.receiveShadows = false;
+            billboard.contactShadow = c.transform;
+        }
+
+        billboard.ApplyLook();
         billboard.FaceCamera();
         return billboard;
     }
@@ -60,11 +108,47 @@ public class SpriteBillboard : MonoBehaviour
     public void SetSprite(Sprite sprite)
     {
         spriteRenderer.sprite = sprite;
+        if (shadowCaster != null) shadowCaster.sprite = sprite;
+        ApplyLook();
     }
 
+    /// <summary>Tint warna (kebal, diperlambat, preview). Alpha &lt; 1 otomatis memakai mode transparan.</summary>
     public void SetColor(Color color)
     {
-        spriteRenderer.color = color;
+        tint = color;
+        ApplyLook();
+    }
+
+    private void ApplyLook()
+    {
+        Sprite sprite = spriteRenderer.sprite;
+        Material cutout = SpriteMaterials.Cutout;
+        bool useCutout = !translucent && tint.a >= 0.99f && cutout != null && sprite != null;
+
+        if (useCutout)
+        {
+            // URP Unlit membaca _BaseMap (bukan _MainTex milik SpriteRenderer), jadi teksturnya diisi manual
+            spriteRenderer.sharedMaterial = cutout;
+            spriteRenderer.color = Color.white;
+            spriteRenderer.GetPropertyBlock(block);
+            block.SetTexture(BaseMapId, sprite.texture);
+            block.SetColor(BaseColorId, tint);
+            spriteRenderer.SetPropertyBlock(block);
+        }
+        else
+        {
+            spriteRenderer.sharedMaterial = SpriteMaterials.DefaultSprite;
+            spriteRenderer.SetPropertyBlock(null);
+            spriteRenderer.color = tint;
+        }
+
+        if (shadowCaster != null && sprite != null)
+        {
+            shadowCaster.GetPropertyBlock(block);
+            block.SetTexture(BaseMapId, sprite.texture);
+            block.SetColor(BaseColorId, Color.white);
+            shadowCaster.SetPropertyBlock(block);
+        }
     }
 
     private void LateUpdate()
@@ -83,42 +167,50 @@ public class SpriteBillboard : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (shadow != null) Destroy(shadow.gameObject);
+        if (contactShadow != null) Destroy(contactShadow.gameObject);
     }
 
     // ------------------------------------------------------------------
-    // Material & sprite placeholder (dibuat sekali, dicek ulang karena Domain Reload dimatikan)
+    // Material & sprite placeholder (dicek ulang karena Domain Reload dimatikan)
     // ------------------------------------------------------------------
 
-    private static Material shadowMaterial;
-    private static Texture2D shadowTexture;
+    private static Material contactShadowMaterial;
+    private static Texture2D contactShadowTexture;
 
-    private static Material ShadowMaterial
+    private static Material ContactShadowMaterial
     {
         get
         {
-            if (shadowMaterial == null)
+            if (contactShadowMaterial == null)
             {
-                if (shadowTexture == null)
+                if (contactShadowTexture == null)
                 {
                     const int size = 32;
-                    shadowTexture = new Texture2D(size, size, TextureFormat.RGBA32, false) { name = "BlobShadow", wrapMode = TextureWrapMode.Clamp };
+                    contactShadowTexture = new Texture2D(size, size, TextureFormat.RGBA32, false) { name = "ContactShadow", wrapMode = TextureWrapMode.Clamp };
                     for (int y = 0; y < size; y++)
                     {
                         for (int x = 0; x < size; x++)
                         {
                             float dx = (x + 0.5f) / size * 2f - 1f;
                             float dy = (y + 0.5f) / size * 2f - 1f;
-                            float a = Mathf.Clamp01(1f - Mathf.Sqrt(dx * dx + dy * dy));
-                            shadowTexture.SetPixel(x, y, new Color(0f, 0f, 0f, a * a * 0.55f));
+                            float d = Mathf.Sqrt(dx * dx + dy * dy);
+                            // Inti gelap yang tegas di tengah, pinggir memudar
+                            float a = Mathf.Clamp01(1f - d);
+                            a = Mathf.SmoothStep(0f, 1f, a);
+                            contactShadowTexture.SetPixel(x, y, new Color(0f, 0f, 0f, a * 0.75f));
                         }
                     }
-                    shadowTexture.Apply();
+                    contactShadowTexture.Apply();
                 }
 
-                shadowMaterial = new Material(Shader.Find("Sprites/Default")) { name = "BlobShadow", mainTexture = shadowTexture, renderQueue = TowerVfx.GroundDecalQueue + 5 };
+                contactShadowMaterial = new Material(Shader.Find("Sprites/Default"))
+                {
+                    name = "ContactShadow",
+                    mainTexture = contactShadowTexture,
+                    renderQueue = TowerVfx.GroundDecalQueue + 5
+                };
             }
-            return shadowMaterial;
+            return contactShadowMaterial;
         }
     }
 
@@ -149,7 +241,6 @@ public class SpriteBillboard : MonoBehaviour
         {
             for (int x = 0; x < widthPx; x++)
             {
-                // Bentuk kapsul: elips dengan sudut membulat
                 float nx = (x + 0.5f - rx) / rx;
                 float ny = (y + 0.5f - ry) / ry;
                 float d = Mathf.Pow(Mathf.Abs(nx), 2.6f) + Mathf.Pow(Mathf.Abs(ny), 2.6f);
@@ -163,7 +254,6 @@ public class SpriteBillboard : MonoBehaviour
             }
         }
 
-        // Dua mata kecil supaya terbaca sebagai karakter
         int eyeY = Mathf.RoundToInt(heightPx * 0.62f);
         int eyeL = Mathf.RoundToInt(widthPx * 0.36f), eyeR = Mathf.RoundToInt(widthPx * 0.64f) - 1;
         Color eye = new Color(1f, 0.95f, 0.6f);
@@ -174,5 +264,32 @@ public class SpriteBillboard : MonoBehaviour
         sprite.name = tex.name;
         placeholderCache[key] = sprite;
         return sprite;
+    }
+}
+
+/// <summary>Material sprite dari Resources/Sprites2D (dimuat sekali).</summary>
+public static class SpriteMaterials
+{
+    private static Material cutout;
+    private static Material shadowCaster;
+    private static Material defaultSprite;
+
+    /// <summary>URP Unlit + alpha clip: warna pixel art apa adanya, tapi menulis depth.</summary>
+    public static Material Cutout => cutout != null ? cutout : (cutout = Resources.Load<Material>("Sprites2D/SpriteCutout"));
+
+    /// <summary>URP Lit + alpha clip: dipakai renderer ShadowsOnly untuk bayangan siluet.</summary>
+    public static Material ShadowCaster => shadowCaster != null ? shadowCaster : (shadowCaster = Resources.Load<Material>("Sprites2D/SpriteShadowCaster"));
+
+    /// <summary>Material sprite transparan bawaan (dipakai preview bayangan tower).</summary>
+    public static Material DefaultSprite
+    {
+        get
+        {
+            if (defaultSprite == null)
+            {
+                defaultSprite = new Material(Shader.Find("Sprites/Default")) { name = "SpriteDefault" };
+            }
+            return defaultSprite;
+        }
     }
 }

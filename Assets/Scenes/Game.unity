@@ -763,6 +763,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WaveManager
   stages:
+  - {fileID: 11400000, guid: c4c3509ca75682e83618b79765cde3df, type: 2}
   - {fileID: 11400000, guid: 3557a61d3ee8154ab3726e5709b2f21f, type: 2}
   - {fileID: 11400000, guid: acfa25c7aca472c9467152894e9a01f1, type: 2}
   - {fileID: 11400000, guid: f1f10d49bbccd9a9bc155dc27c99da6d, type: 2}

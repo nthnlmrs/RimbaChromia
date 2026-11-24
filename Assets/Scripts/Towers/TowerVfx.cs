@@ -131,6 +131,9 @@ public static class TowerVfx
     /// <summary>Quad datar 1x1 menghadap ke atas (dipakai overlay tile).</summary>
     public static Mesh FlatQuad => GetFlatQuad();
 
+    /// <summary>Mesh sphere bawaan Unity (dipakai percikan bara, proyektil).</summary>
+    public static Mesh SphereMesh => GetSphere();
+
     private static Mesh GetFlatQuad()
     {
         if (flatQuad == null)

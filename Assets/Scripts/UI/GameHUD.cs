@@ -103,6 +103,13 @@ public class GameHUD : MonoBehaviour
             info.gameObject.AddComponent<TowerInfoPanel>().Build(grid, root);
         }
 
+        // Stage Tutorial: panduan Taduh langkah demi langkah
+        if (waves != null && waves.CurrentStage != null && waves.CurrentStage.isTutorial)
+        {
+            RectTransform guide = UIKit.Rect("Tutorial Guide", root);
+            guide.gameObject.AddComponent<TutorialGuide>().Build(waves, grid);
+        }
+
         TextMeshProUGUI controls = UIKit.Label("Controls Hint", root,
             "WASD geser kamera  |  Scroll zoom\nR reset kamera  |  Esc jeda", 17f,
             TextAlignmentOptions.BottomLeft, new Color(1f, 1f, 1f, 0.6f));
@@ -250,6 +257,7 @@ public class GameHUD : MonoBehaviour
 
         // Esc yang barusan dipakai membatalkan penempatan / drag tidak ikut membuka menu jeda
         if (grid != null && grid.LastCancelFrame == Time.frameCount) return;
+        if (StoryPlayer.IsPlaying) return;
 
         TogglePause();
     }
@@ -257,6 +265,7 @@ public class GameHUD : MonoBehaviour
     private void TogglePause()
     {
         if (waves != null && (waves.State == StageState.Victory || waves.State == StageState.Defeat)) return;
+        if (StoryPlayer.IsPlaying) return; // cerita sedang diputar (game sudah di-pause oleh StoryPlayer)
 
         isPaused = !isPaused;
         Time.timeScale = isPaused ? 0f : 1f;
@@ -312,6 +321,13 @@ public class GameHUD : MonoBehaviour
         if (!show) return;
 
         int next = waves.CurrentWaveNumber + 1;
+        if (waves.HoldCountdown)
+        {
+            countdownTitle.text = "Ikuti panduan Taduh dulu";
+            countdownNumber.text = "...";
+            return;
+        }
+
         countdownTitle.text = waves.State == StageState.Preparing
             ? $"Persiapan - Wave {next} dimulai dalam"
             : $"Jeda - Wave {next} dimulai dalam";
@@ -345,6 +361,7 @@ public class GameHUD : MonoBehaviour
         StageState state = waves.State;
         bool ended = state == StageState.Victory || state == StageState.Defeat;
         if (!ended || shownResultFor == state) return;
+        if (StoryPlayer.IsPlaying) return; // tunggu cerita Ending selesai dulu
 
         shownResultFor = state;
         isPaused = false;
