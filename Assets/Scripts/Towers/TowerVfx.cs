@@ -99,7 +99,7 @@ public static class TowerVfx
     /// <summary>
     /// Proyektil melengkung (batu api / bola api musuh). onLand dipanggil saat mendarat di 'to'.
     /// </summary>
-    public static void Lob(Vector3 from, Vector3 to, Color color, float flightTime, System.Action onLand, float size = 0.28f)
+    public static void Lob(Vector3 from, Vector3 to, Color color, float flightTime, System.Action onLand, float size = 0.16f)
     {
         GameObject go = new GameObject("Vfx_Lob");
         go.transform.position = from;

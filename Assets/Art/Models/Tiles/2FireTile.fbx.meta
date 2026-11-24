@@ -3,7 +3,22 @@ guid: 65d7d35514dc0b349bc4d104cc42eed7
 ModelImporter:
   serializedVersion: 24300
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: 2BurningFire
+    second: {fileID: 2100000, guid: 355443d3f4cbd557cbcd369b908b67b5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: 1BurningFire
+    second: {fileID: 2100000, guid: d2cc7508b255a7e255cf1be9bd0e2781, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: 2FireTile2
+    second: {fileID: 2100000, guid: 99d54078e7cfe0c1ac3d7a14486effe5, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

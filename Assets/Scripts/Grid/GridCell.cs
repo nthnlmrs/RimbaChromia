@@ -109,11 +109,86 @@ public class GridCell : MonoBehaviour
         if (artModel != null) Destroy(artModel);
 
         artModel = model;
+        decorations.Clear();
+        decorationScales.Clear();
+
         if (artModel != null)
         {
             surfaceY = topY;
             if (meshRenderer != null) meshRenderer.enabled = false;
             if (overlay != null) PositionOverlay();
+
+            // Dekorasi (helai rumput) = semua renderer selain balok tile -> bisa "penyet" saat ditindih tower
+            Renderer[] renderers = artModel.GetComponentsInChildren<Renderer>();
+            if (renderers.Length > 1)
+            {
+                Renderer baseRenderer = ArenaArt.FindBaseRenderer(renderers);
+                foreach (Renderer r in renderers)
+                {
+                    if (r == baseRenderer || r.transform == baseRenderer.transform) continue;
+                    decorations.Add(r.transform);
+                    decorationScales.Add(r.transform.localScale);
+                }
+            }
+
+            if (isOccupied) SetSquashed(true, instant: true);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Rumput "penyet" saat tower berdiri di atasnya
+    // ------------------------------------------------------------------
+
+    private readonly System.Collections.Generic.List<Transform> decorations = new System.Collections.Generic.List<Transform>();
+    private readonly System.Collections.Generic.List<Vector3> decorationScales = new System.Collections.Generic.List<Vector3>();
+    private Coroutine squashRoutine;
+
+    private const float SquashHeight = 0.3f;  // tinggi helai saat ditindih (30%)
+    private const float SquashSpread = 1.2f;  // sedikit melebar ke samping
+    private const float SquashDuration = 0.18f;
+
+    private void SetSquashed(bool squashed, bool instant = false)
+    {
+        if (decorations.Count == 0) return;
+        if (squashRoutine != null) StopCoroutine(squashRoutine);
+
+        if (instant || !isActiveAndEnabled)
+        {
+            ApplySquash(squashed ? 1f : 0f);
+            return;
+        }
+
+        squashRoutine = StartCoroutine(SquashRoutine(squashed));
+    }
+
+    private System.Collections.IEnumerator SquashRoutine(bool squashed)
+    {
+        float t = 0f;
+        while (t < 1f)
+        {
+            t += Time.deltaTime / SquashDuration;
+            float eased = 1f - Mathf.Pow(1f - Mathf.Clamp01(t), 3f);
+            // Saat ditindih sedikit "memantul" (overshoot), saat dilepas kembali tegak pelan
+            float k = squashed ? eased + Mathf.Sin(Mathf.Clamp01(t) * Mathf.PI) * 0.15f : 1f - eased;
+            ApplySquash(k);
+            yield return null;
+        }
+        ApplySquash(squashed ? 1f : 0f);
+        squashRoutine = null;
+    }
+
+    /// <summary>k = 0 tegak normal, k = 1 penyet penuh.</summary>
+    private void ApplySquash(float k)
+    {
+        for (int i = 0; i < decorations.Count; i++)
+        {
+            if (decorations[i] == null) continue;
+            Vector3 s = decorationScales[i];
+            // Kartu rumput: sumbu Y lokal = tinggi helai (pivot di pangkal), jadi Y diperkecil, X dilebarkan
+            decorations[i].localScale = new Vector3(
+                s.x * Mathf.Lerp(1f, SquashSpread, k),
+                s.y * Mathf.Lerp(1f, SquashHeight, k),
+                s.z);
         }
     }
 
@@ -173,12 +248,14 @@ public class GridCell : MonoBehaviour
 
         occupyingTower = newTower;
         isOccupied = true;
+        SetSquashed(true); // rumput tertindih tower
     }
 
     public void RemoveTower()
     {
         occupyingTower = null;
         isOccupied = false;
+        SetSquashed(false); // rumput kembali tegak
     }
 
     public void SetHovered(bool hovered)

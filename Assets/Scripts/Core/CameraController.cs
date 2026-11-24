@@ -29,10 +29,16 @@ public class CameraController : MonoBehaviour
     [SerializeField] private float zoomStep = 1.5f;
 
     [Header("Batas arena")]
-    [Tooltip("Seberapa jauh tepi layar boleh melewati pinggir arena (unit). Bawah lebih longgar karena tertutup kartu tower.")]
+    [Tooltip("Seberapa jauh tepi area pandang boleh melewati pinggir arena (unit)")]
     [SerializeField] private float sideMargin = 0.5f;
-    [SerializeField] private float bottomMargin = 2.6f;
-    [SerializeField] private float topMargin = 0.5f;
+    [SerializeField] private float bottomMargin = 0.4f;
+    [SerializeField] private float topMargin = 0.4f;
+
+    [Header("Area layar yang tidak tertutup HUD (0 = bawah, 1 = atas)")]
+    [Tooltip("Batas atas kartu tower di bawah layar")]
+    [SerializeField, Range(0f, 0.5f)] private float usableBottom = 0.215f;
+    [Tooltip("Batas bawah top bar (stage, wall, insight)")]
+    [SerializeField, Range(0.5f, 1f)] private float usableTop = 0.875f;
 
     [Header("Kehalusan gerak")]
     [SerializeField] private float smoothTime = 0.12f;
@@ -138,13 +144,14 @@ public class CameraController : MonoBehaviour
         Rect arena = grid.WorldBounds;
         Vector3 pose = PoseFor(panPosition, zoom);
 
-        // Titik tanah (y=0) di sudut kiri-bawah, kanan-bawah, dan tengah-atas layar, relatif terhadap kamera
-        if (!GroundOffset(new Vector2(0f, 0f), pose.y, out Vector2 bottomLeft) ||
-            !GroundOffset(new Vector2(1f, 0f), pose.y, out Vector2 bottomRight))
+        // Titik tanah (y=0) di tepi AREA PANDANG (di antara HUD atas & kartu bawah), relatif terhadap kamera.
+        // Jadi baris paling belakang bisa dibawa sampai tepat di bawah top bar, baris depan tepat di atas kartu.
+        if (!GroundOffset(new Vector2(0f, usableBottom), pose.y, out Vector2 bottomLeft) ||
+            !GroundOffset(new Vector2(1f, usableBottom), pose.y, out Vector2 bottomRight))
         {
             return panPosition;
         }
-        bool hasTop = GroundOffset(new Vector2(0.5f, 1f), pose.y, out Vector2 topCenter);
+        bool hasTop = GroundOffset(new Vector2(0.5f, usableTop), pose.y, out Vector2 topCenter);
 
         // Sumbu X: tepi bawah kiri & kanan harus di dalam arena (bagian atas layar memang lebih lebar karena perspektif)
         float minX = arena.xMin - sideMargin - bottomLeft.x;

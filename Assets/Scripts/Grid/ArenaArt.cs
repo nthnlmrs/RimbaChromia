@@ -75,8 +75,10 @@ public class ArenaArt : ScriptableObject
         topY = groundY;
         if (prefab == null) return null;
 
+        // PENTING: pertahankan rotasi bawaan root model. FBX dari Blender (Z-up) dikoreksi Unity
+        // dengan rotasi -90 derajat di root; kalau ditimpa, tile jadi berdiri tegak / rebah.
         float yaw = randomYaw ? 90f * Random.Range(0, 4) : 0f;
-        Quaternion rotation = Quaternion.Euler(0f, yaw, 0f) * Quaternion.Euler(rotationOffset);
+        Quaternion rotation = Quaternion.Euler(0f, yaw, 0f) * Quaternion.Euler(rotationOffset) * prefab.transform.rotation;
 
         GameObject go = Instantiate(prefab, Vector3.zero, rotation, parent);
         foreach (Collider col in go.GetComponentsInChildren<Collider>())
@@ -108,7 +110,26 @@ public class ArenaArt : ScriptableObject
         Vector3 shift = new Vector3(cellCenter.x - bounds.center.x, groundY - bounds.min.y, cellCenter.z - bounds.center.z);
         go.transform.position += shift;
 
-        topY = bounds.max.y + shift.y + surfaceOffset;
+        // Permukaan = atas BALOK tile (bukan ujung helai rumput / lidah api), supaya tower berdiri di tanah
+        Renderer baseRenderer = FindBaseRenderer(renderers);
+        topY = baseRenderer.bounds.max.y + surfaceOffset;
         return go;
+    }
+
+    /// <summary>Renderer "balok tile" = yang tapak X/Z-nya paling luas. Sisanya dekorasi (rumput, api).</summary>
+    public static Renderer FindBaseRenderer(Renderer[] renderers)
+    {
+        Renderer best = renderers[0];
+        float bestArea = -1f;
+        foreach (Renderer r in renderers)
+        {
+            float area = r.bounds.size.x * r.bounds.size.z;
+            if (area > bestArea)
+            {
+                bestArea = area;
+                best = r;
+            }
+        }
+        return best;
     }
 }

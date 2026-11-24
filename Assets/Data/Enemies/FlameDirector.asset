@@ -29,6 +29,6 @@ MonoBehaviour:
   projectileFlightTime: 1
   projectileColor: {r: 0.95, g: 0.12, b: 0.05, a: 1}
   sprite: {fileID: 0}
-  spriteScale: 1
+  spriteScale: 1.5
   placeholderColor: {r: 0.1, g: 0.1, b: 0.1, a: 1}
   placeholderScale: {x: 1.15, y: 1.15, z: 1.15}
