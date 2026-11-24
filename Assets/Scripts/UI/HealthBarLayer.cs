@@ -53,7 +53,7 @@ public class HealthBarLayer : MonoBehaviour
         {
             if (enemy == null || enemy.MaxHP <= 0f) continue;
 
-            Vector3 world = enemy.transform.position + Vector3.up * (enemy.transform.localScale.y * 0.5f + 0.25f);
+            Vector3 world = enemy.transform.position + Vector3.up * (enemy.VisualHeight + 0.15f);
             float ratio = enemy.CurrentHP / enemy.MaxHP;
             UpdateBar(enemy, world, ratio, EnemyColor, EnemyBarSize, ratio < 0.999f, frame);
         }

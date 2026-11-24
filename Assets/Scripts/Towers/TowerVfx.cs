@@ -7,6 +7,29 @@ using UnityEngine;
 public static class TowerVfx
 {
     private static Material unlitMaterial;
+    private static Material groundMaterial;
+
+    /// <summary>
+    /// Urutan render (Transparent = 3000):
+    ///  - Dekal tanah (overlay tile, gelombang, bayangan) di bawah 3000 -> digambar SEBELUM sprite karakter,
+    ///    jadi tidak menimpa sprite tower/musuh yang berdiri di depannya.
+    ///  - Sprite karakter 3000 (bawaan SpriteRenderer).
+    ///  - Proyektil / beam di atas 3000 -> selalu terlihat di depan sprite.
+    /// </summary>
+    public const int GroundDecalQueue = 2980;
+
+    /// <summary>Material untuk efek datar di tanah (overlay tile, gelombang).</summary>
+    public static Material GroundMaterial
+    {
+        get
+        {
+            if (groundMaterial == null)
+            {
+                groundMaterial = new Material(Shader.Find("Sprites/Default")) { name = "TowerVfx_Ground", renderQueue = GroundDecalQueue };
+            }
+            return groundMaterial;
+        }
+    }
     private static Mesh flatQuad;
     private static Mesh sphereMesh;
 
@@ -33,7 +56,9 @@ public static class TowerVfx
     /// <summary>Gelombang datar yang membesar lalu memudar di atas tile.</summary>
     public static void Pulse(Vector3 center, float size, Color color, float duration)
     {
-        PulseAtHeight(center, 0.12f, size, color, duration);
+        // Di atas permukaan tile tertinggi supaya tidak tertutup model rumput 3D
+        float ground = GridManager.Instance != null ? GridManager.Instance.MaxSurfaceY : 0.075f;
+        PulseAtHeight(center, Mathf.Max(0.12f, ground + 0.04f), size, color, duration);
     }
 
     /// <summary>Sama seperti Pulse, tapi di ketinggian tertentu (misal di atas kepala tower).</summary>
@@ -45,6 +70,10 @@ public static class TowerVfx
         go.AddComponent<MeshFilter>().sharedMesh = GetFlatQuad();
         MeshRenderer mr = go.AddComponent<MeshRenderer>();
         SetupRenderer(mr);
+
+        // Gelombang di tanah = dekal (di belakang sprite); gelombang di atas kepala tower tetap di depan
+        float ground = GridManager.Instance != null ? GridManager.Instance.MaxSurfaceY : 0.075f;
+        if (height <= ground + 0.15f) mr.sharedMaterial = GroundMaterial;
 
         VfxPulse pulse = go.AddComponent<VfxPulse>();
         pulse.Init(mr, size, color, duration);
@@ -98,6 +127,9 @@ public static class TowerVfx
         mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         mr.receiveShadows = false;
     }
+
+    /// <summary>Quad datar 1x1 menghadap ke atas (dipakai overlay tile).</summary>
+    public static Mesh FlatQuad => GetFlatQuad();
 
     private static Mesh GetFlatQuad()
     {

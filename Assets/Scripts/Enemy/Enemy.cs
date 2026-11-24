@@ -46,6 +46,10 @@ public class Enemy : MonoBehaviour
     }
 
     private Color baseColor = new Color(0f, 0.75f, 1f);
+    private SpriteBillboard billboard;
+
+    /// <summary>Tinggi visual musuh di dunia (untuk posisi health bar & titik lempar).</summary>
+    public float VisualHeight => billboard != null ? billboard.VisualHeight : transform.localScale.y;
     private static readonly Color SlowTint = new Color(0.75f, 0.9f, 1f);
 
     private GridManager gridManager;
@@ -94,8 +98,9 @@ public class Enemy : MonoBehaviour
             return;
         }
 
-        Vector3 startPos = gridManager.GetCellWorldPosition(pathCoords[0].x, pathCoords[0].y);
-        transform.position = startPos + Vector3.up * heightOffset;
+        GridCell startCell = gridManager.GetCell(pathCoords[0].x, pathCoords[0].y);
+        Vector3 startPos = startCell.transform.position;
+        transform.position = new Vector3(startPos.x, startCell.SurfaceY + heightOffset, startPos.z);
         targetIndex = 1;
     }
 
@@ -237,7 +242,7 @@ public class Enemy : MonoBehaviour
 
         if (towerCount == 0 && grassCount == 0) return false;
 
-        Vector3 launch = transform.position + Vector3.up * (transform.localScale.y * 0.5f);
+        Vector3 launch = transform.position + Vector3.up * (VisualHeight * 0.6f);
 
         for (int i = 0; i < towerCount; i++)
         {
@@ -312,30 +317,39 @@ public class Enemy : MonoBehaviour
         attackCooldown = data.attackCooldown;
         moveSpeed = data.MoveSpeed;
 
-        if (data.placeholderScale != Vector3.zero)
+        // GDD 2.5D: musuh = sprite 2D. Kubus placeholder disembunyikan (collider tetap ada).
+        foreach (MeshRenderer cube in GetComponentsInChildren<MeshRenderer>())
         {
-            transform.localScale = data.placeholderScale;
-            // Kubus placeholder: alasnya pas di atas permukaan tile (tile tebal 0.15, pusat di y=0)
-            heightOffset = 0.075f + data.placeholderScale.y * 0.5f;
+            cube.enabled = false;
         }
 
-        // Warna placeholder supaya tiap jenis musuh bisa dibedakan sebelum sprite final masuk
-        baseColor = data.placeholderColor;
+        // Skala root selalu seragam; ukuran diatur lewat spriteScale (jangan non-uniform -> pixel art gepeng)
+        float scale = Mathf.Max(0.25f, data.spriteScale);
+        transform.localScale = Vector3.one * scale;
+        heightOffset = 0f; // pivot sprite di kaki -> berdiri tepat di permukaan tile
+
+        Sprite sprite = data.sprite;
+        if (sprite == null)
+        {
+            // Belum ada art: placeholder pixel 2D seukuran placeholderScale lama
+            Vector3 ps = data.placeholderScale == Vector3.zero ? Vector3.one * 0.6f : data.placeholderScale;
+            int w = Mathf.Clamp(Mathf.RoundToInt(48f * ps.x), 16, 96);
+            sprite = SpriteBillboard.Placeholder(data.placeholderColor, w, Mathf.RoundToInt(w * 1.15f));
+        }
+
+        if (billboard == null) billboard = SpriteBillboard.Create(transform, sprite, true, 0.6f);
+        else billboard.SetSprite(sprite);
+
+        baseColor = Color.white; // sprite sudah berwarna, tint putih = warna asli
         ApplyTint();
     }
 
     private void ApplyTint()
     {
-        Renderer meshRenderer = GetComponentInChildren<Renderer>();
-        if (meshRenderer == null) return;
+        if (billboard == null) return;
 
-        Color color = IsSlowed ? Color.Lerp(baseColor, SlowTint, 0.65f) : baseColor;
-
-        MaterialPropertyBlock block = new MaterialPropertyBlock();
-        meshRenderer.GetPropertyBlock(block);
-        block.SetColor("_BaseColor", color);
-        block.SetColor("_Color", color);
-        meshRenderer.SetPropertyBlock(block);
+        // Diperlambat Orange trap: sprite jadi kebiruan pucat
+        billboard.SetColor(IsSlowed ? SlowTint : baseColor);
     }
 
     private bool IsBlockedByBarrier(GridCell cell, out Tower barrierTower)
@@ -363,7 +377,8 @@ public class Enemy : MonoBehaviour
 
     private void MoveToward(GridCell targetCell)
     {
-        Vector3 destination = targetCell.transform.position + Vector3.up * heightOffset;
+        Vector3 cellPos = targetCell.transform.position;
+        Vector3 destination = new Vector3(cellPos.x, targetCell.SurfaceY + heightOffset, cellPos.z);
         transform.position = Vector3.MoveTowards(
             transform.position,
             destination,

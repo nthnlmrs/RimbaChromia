@@ -3,12 +3,17 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// Kamera "spectator" untuk gameplay:
-///  - WASD        : geser kamera di atas map (tanpa rotasi, sudut 2.5D tetap)
-///  - Scroll mouse: zoom in / out (maju-mundur searah pandangan kamera)
+/// Kamera "spectator" untuk gameplay (sudut 2.5D tetap, tidak bisa diputar):
+///  - WASD        : geser kamera
+///  - Scroll mouse: zoom in / out (maju-mundur searah pandangan)
 ///  - Shift       : geser lebih cepat
-///  - R           : kembali ke posisi awal (seluruh map terlihat)
-/// Posisi & sudut awal diambil dari Main Camera di scene. Gerakan dibatasi supaya tidak keluar map.
+///  - R           : kembali ke tampilan awal
+///
+/// Aturan supaya rapi:
+///  - Zoom out paling jauh = tampilan awal dari scene (seluruh arena), jadi area kosong tidak bertambah.
+///  - Zoom in dibatasi supaya pixel art 64 PPU paling besar ~2.5x (tidak pecah / terlalu kotak-kotak).
+///  - Geser dibatasi berdasarkan area tanah yang BENAR-BENAR terlihat kamera (bukan angka kasar),
+///    jadi tepi bawah & samping layar tidak bisa keluar dari arena.
 /// Otomatis ditambahkan ke Main Camera oleh GridManager.
 /// </summary>
 [RequireComponent(typeof(Camera))]
@@ -19,11 +24,15 @@ public class CameraController : MonoBehaviour
     [SerializeField] private float fastMultiplier = 2f;
 
     [Header("Zoom (scroll)")]
-    [Tooltip("Seberapa jauh kamera boleh maju dari posisi awal (unit dunia)")]
-    [SerializeField] private float maxZoomIn = 9f;
-    [Tooltip("Seberapa jauh kamera boleh mundur dari posisi awal (unit dunia)")]
-    [SerializeField] private float maxZoomOut = 2f;
+    [Tooltip("Pembesaran maksimal pixel art (pixel layar per pixel sprite) di tengah layar")]
+    [SerializeField] private float maxPixelZoom = 2.5f;
     [SerializeField] private float zoomStep = 1.5f;
+
+    [Header("Batas arena")]
+    [Tooltip("Seberapa jauh tepi layar boleh melewati pinggir arena (unit). Bawah lebih longgar karena tertutup kartu tower.")]
+    [SerializeField] private float sideMargin = 0.5f;
+    [SerializeField] private float bottomMargin = 2.6f;
+    [SerializeField] private float topMargin = 0.5f;
 
     [Header("Kehalusan gerak")]
     [SerializeField] private float smoothTime = 0.12f;
@@ -31,43 +40,51 @@ public class CameraController : MonoBehaviour
     [Header("Kontrol")]
     [SerializeField] private Key resetKey = Key.R;
 
+    [Header("Latar")]
+    [Tooltip("Warna latar kamera (menyatu dengan hutan di luar arena)")]
+    [SerializeField] private Color backgroundColor = new Color(0.10f, 0.17f, 0.11f);
+
+    private const float SpritePixelsPerUnit = 64f;
+
+    private Camera cam;
     private Vector3 homePosition;
     private Vector3 forward;
+    private float maxZoomIn;
 
-    private Vector2 targetPan;   // geser di bidang X/Z relatif posisi awal
-    private float targetZoom;    // + = maju (zoom in)
-    private Vector2 pan;
-    private float zoom;
-    private Vector2 panVelocity;
-    private float zoomVelocity;
+    private Vector3 targetPosition;
+    private float targetZoom;
+    private Vector3 velocity;
 
     private void Start()
     {
+        cam = GetComponent<Camera>();
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = backgroundColor;
+
         homePosition = transform.position;
         forward = transform.forward;
+        targetPosition = homePosition;
+        maxZoomIn = ComputeMaxZoomIn();
     }
 
     private void Update()
     {
-        // Jangan bergerak saat pause / menang / kalah
-        if (Time.timeScale <= 0f)
-        {
-            return;
-        }
+        if (Time.timeScale <= 0f) return; // pause / menang / kalah
 
         float dt = Time.unscaledDeltaTime;
         ReadInput(dt);
 
-        // Batas geser: setengah ukuran map ke tiap arah, ditambah sedikit saat zoom in
-        Vector2 limit = GetPanLimit();
-        targetPan.x = Mathf.Clamp(targetPan.x, -limit.x, limit.x);
-        targetPan.y = Mathf.Clamp(targetPan.y, -limit.y, limit.y);
-        targetZoom = Mathf.Clamp(targetZoom, -maxZoomOut, maxZoomIn);
+        targetZoom = Mathf.Clamp(targetZoom, 0f, maxZoomIn);
+        targetPosition = ClampToArena(targetPosition, targetZoom);
 
-        pan = Vector2.SmoothDamp(pan, targetPan, ref panVelocity, smoothTime, Mathf.Infinity, dt);
-        zoom = Mathf.SmoothDamp(zoom, targetZoom, ref zoomVelocity, smoothTime, Mathf.Infinity, dt);
+        Vector3 desired = PoseFor(targetPosition, targetZoom);
+        transform.position = Vector3.SmoothDamp(transform.position, desired, ref velocity, smoothTime, Mathf.Infinity, dt);
+    }
 
-        transform.position = homePosition + new Vector3(pan.x, 0f, pan.y) + forward * zoom;
+    // targetPosition = posisi kamera "kalau tidak di-zoom" (bidang geser), zoom ditambahkan searah pandangan
+    private Vector3 PoseFor(Vector3 panPosition, float zoom)
+    {
+        return panPosition + forward * zoom;
     }
 
     private void ReadInput(float dt)
@@ -85,14 +102,14 @@ public class CameraController : MonoBehaviour
             {
                 float speed = panSpeed * (kb.shiftKey.isPressed ? fastMultiplier : 1f);
                 // Makin zoom in makin pelan, supaya mudah melihat detail
-                float zoomFactor = Mathf.Lerp(1f, 0.55f, Mathf.InverseLerp(0f, maxZoomIn, targetZoom));
-                targetPan += move.normalized * speed * zoomFactor * dt;
+                float zoomFactor = Mathf.Lerp(1f, 0.45f, maxZoomIn > 0f ? targetZoom / maxZoomIn : 0f);
+                Vector2 delta = move.normalized * speed * zoomFactor * dt;
+                targetPosition += new Vector3(delta.x, 0f, delta.y);
             }
 
             if (kb[resetKey].wasPressedThisFrame)
             {
-                targetPan = Vector2.zero;
-                targetZoom = 0f;
+                ResetView();
             }
         }
 
@@ -109,22 +126,72 @@ public class CameraController : MonoBehaviour
         }
     }
 
-    private Vector2 GetPanLimit()
+    /// <summary>
+    /// Geser posisi supaya tanah yang terlihat di tepi kiri/kanan/bawah layar tetap di dalam arena.
+    /// Kalau arena lebih sempit dari layar di satu sumbu, kamera ditengahkan di sumbu itu.
+    /// </summary>
+    private Vector3 ClampToArena(Vector3 panPosition, float zoom)
     {
         GridManager grid = GridManager.Instance;
-        float halfWidth = grid != null ? grid.Columns * grid.CellSize * 0.5f : 10f;
-        float halfDepth = grid != null ? grid.Rows * grid.CellSize * 0.5f : 8f;
+        if (grid == null || !grid.IsGridReady) return homePosition;
 
-        // Di posisi awal seluruh map sudah terlihat, jadi geser hanya berguna saat zoom in
-        float zoomed = Mathf.InverseLerp(-maxZoomOut, maxZoomIn, targetZoom);
-        float t = Mathf.Lerp(0.35f, 1f, zoomed);
-        return new Vector2(halfWidth * t, halfDepth * t);
+        Rect arena = grid.WorldBounds;
+        Vector3 pose = PoseFor(panPosition, zoom);
+
+        // Titik tanah (y=0) di sudut kiri-bawah, kanan-bawah, dan tengah-atas layar, relatif terhadap kamera
+        if (!GroundOffset(new Vector2(0f, 0f), pose.y, out Vector2 bottomLeft) ||
+            !GroundOffset(new Vector2(1f, 0f), pose.y, out Vector2 bottomRight))
+        {
+            return panPosition;
+        }
+        bool hasTop = GroundOffset(new Vector2(0.5f, 1f), pose.y, out Vector2 topCenter);
+
+        // Sumbu X: tepi bawah kiri & kanan harus di dalam arena (bagian atas layar memang lebih lebar karena perspektif)
+        float minX = arena.xMin - sideMargin - bottomLeft.x;
+        float maxX = arena.xMax + sideMargin - bottomRight.x;
+        float x = minX <= maxX ? Mathf.Clamp(pose.x, minX, maxX) : (arena.center.x - (bottomLeft.x + bottomRight.x) * 0.5f);
+
+        // Sumbu Z: tepi bawah tidak boleh lewat arena (prioritas), tepi atas sebisa mungkin
+        float minZ = arena.yMin - bottomMargin - bottomLeft.y;
+        float maxZ = hasTop ? arena.yMax + topMargin - topCenter.y : float.PositiveInfinity;
+        float z = pose.z;
+        if (minZ <= maxZ) z = Mathf.Clamp(z, minZ, maxZ);
+        else z = Mathf.Max(minZ, Mathf.Min(z, homePosition.z + forward.z * zoom)); // tampilan awal tetap boleh
+
+        Vector3 clampedPose = new Vector3(x, pose.y, z);
+        return clampedPose - forward * zoom;
+    }
+
+    /// <summary>Selisih X/Z dari kamera ke titik tanah yang terlihat di titik viewport tertentu.</summary>
+    private bool GroundOffset(Vector2 viewport, float cameraHeight, out Vector2 offset)
+    {
+        offset = Vector2.zero;
+        Vector3 dir = cam.ViewportPointToRay(new Vector3(viewport.x, viewport.y, 0f)).direction;
+        if (dir.y >= -0.0001f) return false; // sinar tidak mengenai tanah (melihat cakrawala)
+
+        float t = cameraHeight / -dir.y;
+        offset = new Vector2(dir.x * t, dir.z * t);
+        return true;
+    }
+
+    /// <summary>Hitung zoom in maksimal supaya sprite 64 PPU paling besar maxPixelZoom kali di tengah layar.</summary>
+    private float ComputeMaxZoomIn()
+    {
+        if (cam == null || cam.orthographic) return 6f;
+
+        // Jarak minimal: tinggi area terlihat = layar / (PPU * zoom pixel)
+        float minVisibleHeight = Screen.height / (SpritePixelsPerUnit * maxPixelZoom);
+        float minDistance = minVisibleHeight / (2f * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad));
+
+        // Jarak awal kamera ke tanah searah pandangan
+        float homeDistance = forward.y < -0.0001f ? homePosition.y / -forward.y : 15f;
+        return Mathf.Max(0f, homeDistance - minDistance);
     }
 
     /// <summary>Kembalikan kamera ke tampilan awal (dipakai tombol UI kalau perlu).</summary>
     public void ResetView()
     {
-        targetPan = Vector2.zero;
+        targetPosition = homePosition;
         targetZoom = 0f;
     }
 }

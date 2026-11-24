@@ -28,5 +28,7 @@ MonoBehaviour:
   canAttackWhileBlocked: 0
   projectileFlightTime: 0.6
   projectileColor: {r: 1, g: 0.62, b: 0.1, a: 1}
+  sprite: {fileID: 0}
+  spriteScale: 1
   placeholderColor: {r: 1, g: 0.45, b: 0.1, a: 1}
   placeholderScale: {x: 0.55, y: 0.55, z: 0.55}

@@ -24,8 +24,8 @@ public class PlacementPreview : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float ghostAlpha = 0.45f;
 
     [Header("Posisi")]
-    [Tooltip("Tinggi overlay di atas pusat tile (tile tebal 0.15, permukaannya di 0.075)")]
-    [SerializeField] private float overlayHeight = 0.09f;
+    [Tooltip("Jarak overlay di atas permukaan tile (model 3D / kotak placeholder)")]
+    [SerializeField] private float overlayHeight = 0.025f;
 
     private enum OverlayKind { Hidden, Dim, Range, Valid, Merge, Invalid }
 
@@ -37,7 +37,7 @@ public class PlacementPreview : MonoBehaviour
 
     private Material dimMat, rangeMat, validMat, mergeMat, invalidMat, ghostMat;
     private GameObject ghost;
-    private Vector3 ghostBaseScale = Vector3.one;
+    private SpriteBillboard ghostSprite;
     private Mesh quadMesh;
 
     // Cache supaya overlay hanya dihitung ulang kalau ada yang berubah
@@ -255,7 +255,8 @@ public class PlacementPreview : MonoBehaviour
         {
             GameObject quad = new GameObject($"Overlay_{cell.Row}_{cell.Column}");
             quad.transform.SetParent(overlayRoot, false);
-            quad.transform.position = cell.transform.position + Vector3.up * overlayHeight;
+            Vector3 cellPos = cell.transform.position;
+            quad.transform.position = new Vector3(cellPos.x, cell.SurfaceY + overlayHeight, cellPos.z);
             quad.transform.localScale = new Vector3(size, 1f, size);
 
             quad.AddComponent<MeshFilter>().sharedMesh = quadMesh;
@@ -298,54 +299,29 @@ public class PlacementPreview : MonoBehaviour
 
     private void ShowGhost(GridCell cell, TowerData data, bool ok)
     {
-        if (ghost == null && !BuildGhost())
-        {
-            return;
-        }
+        if (ghost == null) BuildGhost();
 
-        ghost.transform.position = cell.transform.position + Vector3.up * grid.TowerHeightOffset;
-        Vector3 scale = data.placeholderScale != Vector3.zero ? data.placeholderScale : ghostBaseScale;
-        ghost.transform.localScale = scale;
+        // Bayangan tower = sprite 2D tower itu sendiri, transparan (merah kalau tidak bisa dipasang)
+        Sprite sprite = data.towerSprite != null
+            ? data.towerSprite
+            : SpriteBillboard.Placeholder(GetTowerColor(data.color), 40, 60);
+        ghostSprite.SetSprite(sprite);
+        ghostSprite.SetColor(ok
+            ? new Color(1f, 1f, 1f, ghostAlpha + 0.15f)
+            : new Color(1f, 0.35f, 0.35f, ghostAlpha + 0.15f));
 
-        ghostMat.color = ok
-            ? WithAlpha(GetTowerColor(data.color), ghostAlpha)
-            : WithAlpha(invalidColor, ghostAlpha);
+        Vector3 cellPos = cell.transform.position;
+        ghost.transform.position = new Vector3(cellPos.x, cell.SurfaceY, cellPos.z);
 
         SetGhostVisible(true);
     }
 
-    private bool BuildGhost()
+    private void BuildGhost()
     {
-        Tower prefab = grid.TowerPrefab;
-        MeshFilter source = prefab != null ? prefab.GetComponentInChildren<MeshFilter>(true) : null;
-        if (source == null || source.sharedMesh == null)
-        {
-            return false;
-        }
-
         ghost = new GameObject("Tower Ghost");
         ghost.transform.SetParent(overlayRoot, false);
-        ghostBaseScale = prefab.transform.localScale;
-
-        // Salin posisi mesh relatif terhadap root prefab (kalau mesh ada di child)
-        GameObject meshObject = ghost;
-        if (source.transform != prefab.transform)
-        {
-            meshObject = new GameObject("Mesh");
-            meshObject.transform.SetParent(ghost.transform, false);
-            meshObject.transform.localPosition = source.transform.localPosition;
-            meshObject.transform.localRotation = source.transform.localRotation;
-            meshObject.transform.localScale = source.transform.localScale;
-        }
-
-        meshObject.AddComponent<MeshFilter>().sharedMesh = source.sharedMesh;
-        MeshRenderer mr = meshObject.AddComponent<MeshRenderer>();
-        mr.sharedMaterial = ghostMat;
-        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        mr.receiveShadows = false;
-
+        ghostSprite = SpriteBillboard.Create(ghost.transform, null, false);
         ghost.SetActive(false);
-        return true;
     }
 
     private void SetGhostVisible(bool visible)
@@ -363,7 +339,7 @@ public class PlacementPreview : MonoBehaviour
     private static Material NewMaterial(Shader shader, Color color)
     {
         Material mat = new Material(shader) { color = color };
-        mat.renderQueue = 3100; // di atas tile & api, di bawah UI
+        mat.renderQueue = TowerVfx.GroundDecalQueue - 10; // dekal tanah: sebelum sprite karakter (3000)
         return mat;
     }
 

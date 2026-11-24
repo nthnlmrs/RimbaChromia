@@ -566,6 +566,7 @@ MonoBehaviour:
   wallMaterial: {fileID: 2100000, guid: f81d8d6ffc14f3344b5866fb097584d3, type: 2}
   selectedMaterial: {fileID: 2100000, guid: 39db6af0157f5394fb59a4ba6ca693de, type: 2}
   hoverMaterial: {fileID: 0}
+  arenaArt: {fileID: 11400000, guid: d5d0fcdc8215c9a4ecf0101b73e4efb3, type: 2}
   insightManager: {fileID: 116065416}
   selectedTowerData: {fileID: 11400000, guid: d175b4119ffbefa438814a6b7c0b1898, type: 2}
   towerHotbar:

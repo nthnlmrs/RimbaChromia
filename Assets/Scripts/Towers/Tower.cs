@@ -46,6 +46,7 @@ public class Tower : MonoBehaviour
     private MeshRenderer meshRenderer;
     private SpriteRenderer spriteRenderer;
     private MaterialPropertyBlock propBlock;
+    private SpriteBillboard billboard;
     private float cellSize = 1f;
     private float actionTimer;
     private float immuneTimer;
@@ -91,6 +92,7 @@ public class Tower : MonoBehaviour
         cellSize = newCellSize > 0f ? newCellSize : 1f;
         actionTimer = 0f;
         ApplyTowerData(towerData, restoreFullHP: true);
+        PlaceOnCell();
         RefreshBuffs();
 
         TowerVfx.Pulse(transform.position, cellSize * 0.9f, Color.white, 0.3f);
@@ -216,7 +218,7 @@ public class Tower : MonoBehaviour
             insight.AddInsight(data.insightPerTick);
 
             // Kilatan di atas kepala tower supaya tidak tertutup badan silinder placeholder
-            float top = transform.position.y + transform.localScale.y + 0.05f;
+            float top = transform.position.y + (billboard != null ? billboard.VisualHeight : 1f) + 0.05f;
             TowerVfx.PulseAtHeight(transform.position, top, cellSize * 1.4f, new Color(1f, 0.95f, 0.3f), 0.5f);
         }
     }
@@ -287,7 +289,7 @@ public class Tower : MonoBehaviour
         }
 
         actionTimer = 0f;
-        TowerVfx.FireProjectile(transform.position + Vector3.up * 0.4f, target, Damage, TowerVfx.ColorOf(data.color));
+        TowerVfx.FireProjectile(transform.position + Vector3.up * 0.6f, target, Damage, TowerVfx.ColorOf(data.color));
     }
 
     private Enemy FindTargetInRange()
@@ -534,6 +536,23 @@ public class Tower : MonoBehaviour
     // Visual
     // ------------------------------------------------------------------
 
+    /// <summary>Berdiri tepat di permukaan tile (sprite pivot di kaki).</summary>
+    private void PlaceOnCell()
+    {
+        Vector3 cellPos = occupiedCell.transform.position;
+        transform.position = new Vector3(cellPos.x, occupiedCell.SurfaceY, cellPos.z);
+
+        // Collider untuk klik badan tower: setinggi sprite, alas di tanah
+        CapsuleCollider capsule = GetComponent<CapsuleCollider>();
+        if (capsule != null)
+        {
+            capsule.direction = 1;
+            capsule.radius = 0.4f * cellSize;
+            capsule.height = 1.4f * cellSize;
+            capsule.center = new Vector3(0f, 0.7f * cellSize, 0f);
+        }
+    }
+
     private void ApplyTowerData(TowerData newData, bool restoreFullHP)
     {
         data = newData;
@@ -541,10 +560,8 @@ public class Tower : MonoBehaviour
 
         ApplyVisual();
 
-        if (data.placeholderScale != Vector3.zero)
-        {
-            transform.localScale = data.placeholderScale;
-        }
+        // Sprite 2D: skala selalu 1 (pixel art tidak boleh melebar / memipih)
+        transform.localScale = Vector3.one;
 
         if (occupiedCell != null)
         {
@@ -556,50 +573,20 @@ public class Tower : MonoBehaviour
 
     private void ApplyVisual()
     {
-        // 1. Jika sprite final sudah diisi & prefab punya SpriteRenderer -> tampilkan gambar asli
-        if (spriteRenderer != null && data.towerSprite != null)
-        {
-            spriteRenderer.enabled = true;
-            spriteRenderer.sprite = data.towerSprite;
-            spriteRenderer.color = IsImmune ? new Color(1f, 1f, 1f, 0.7f) : Color.white;
+        // GDD 2.5D: tower = sprite 2D di dunia 3D. Mesh silinder placeholder disembunyikan.
+        if (meshRenderer != null) meshRenderer.enabled = false;
+        if (spriteRenderer != null && (billboard == null || spriteRenderer != billboard.Renderer)) spriteRenderer.enabled = false;
 
-            if (meshRenderer != null)
-            {
-                meshRenderer.enabled = false;
-            }
-            return;
-        }
+        // Belum ada art -> sprite placeholder 2D berwarna (bukan bentuk 3D)
+        Sprite sprite = data.towerSprite != null
+            ? data.towerSprite
+            : SpriteBillboard.Placeholder(GetColorFromTowerColor(data.color), 40, 60);
 
-        // 2. Mode Placeholder / Dummy 3D
-        if (spriteRenderer != null)
-        {
-            spriteRenderer.enabled = false;
-        }
+        if (billboard == null) billboard = SpriteBillboard.Create(transform, sprite, true, 0.85f);
+        else billboard.SetSprite(sprite);
 
-        if (meshRenderer == null)
-        {
-            return;
-        }
-
-        meshRenderer.enabled = true;
-
-        if (data.placeholderMaterial != null)
-        {
-            meshRenderer.sharedMaterial = data.placeholderMaterial;
-            meshRenderer.SetPropertyBlock(null);
-            return;
-        }
-
-        // Otomatis warnai dummy 3D berdasarkan dropdown Color di TowerData.
-        // Saat kebal (Red setelah merge) warnanya dibuat lebih terang.
-        Color autoColor = GetColorFromTowerColor(data.color);
-        if (IsImmune) autoColor = Color.Lerp(autoColor, Color.white, 0.55f);
-
-        if (propBlock == null) propBlock = new MaterialPropertyBlock();
-        meshRenderer.GetPropertyBlock(propBlock);
-        propBlock.SetColor("_BaseColor", autoColor); // Untuk URP Lit / Unlit
-        propBlock.SetColor("_Color", autoColor);     // Fallback shader standar
-        meshRenderer.SetPropertyBlock(propBlock);
+        // Kebal (Red setelah merge): sprite berpendar keemasan & sedikit transparan
+        billboard.SetColor(IsImmune ? new Color(1f, 0.92f, 0.6f, 0.75f) : Color.white);
     }
 
     private Color GetColorFromTowerColor(TowerColor towerColor)
@@ -640,7 +627,7 @@ public class Tower : MonoBehaviour
             beam.endColor = new Color(0.8f, 1f, 0.9f, 0.6f);
         }
 
-        beam.SetPosition(0, transform.position + Vector3.up * 0.4f);
+        beam.SetPosition(0, transform.position + Vector3.up * 0.7f);
         beam.SetPosition(1, targetPosition);
         beam.enabled = true;
         beamTimer = BeamDuration;

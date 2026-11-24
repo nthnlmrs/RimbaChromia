@@ -50,15 +50,8 @@ public class FireManager : MonoBehaviour
     [SerializeField] private Color level2Tint = new Color(0.95f, 0.30f, 0.05f);
     [SerializeField] private Color level3Tint = new Color(0.55f, 0.05f, 0.02f);
 
-    [Header("Visual - Model FBX (opsional). Isi dengan Art/Models/Tiles/xFireTile*")]
-    [SerializeField] private GameObject[] level1Models = new GameObject[0];
-    [SerializeField] private GameObject[] level2Models = new GameObject[0];
-    [SerializeField] private GameObject[] level3Models = new GameObject[0];
-    [SerializeField] private Vector3 modelOffset = new Vector3(0f, 0.08f, 0f);
-    [SerializeField] private Vector3 modelScale = Vector3.one;
-    [SerializeField] private Vector3 modelRotation = Vector3.zero;
-    [Tooltip("Sembunyikan mesh tile asli saat model api tampil (kalau model api sudah termasuk rumputnya).")]
-    [SerializeField] private bool hideBaseTileWhenModelShown = false;
+    // Model 3D api diambil dari aset ArenaArt di GridManager (Data/ArenaArt).
+    // Kalau kosong, tile terbakar ditandai warna (level1Tint..level3Tint).
 
     [Header("Debug Controls (matikan sebelum build final)")]
     [SerializeField] private bool enableDebugControls = true;
@@ -247,7 +240,7 @@ public class FireManager : MonoBehaviour
         burning.Remove(cell);
         cell.SetFireLevel(0);
         cell.SetFireTint(false, Color.white);
-        SetBaseTileVisible(cell, true);
+        cell.SetBaseVisible(true);
 
         if (logFireEvents) Debug.Log($"Api padam di Cell ({cell.Row}, {cell.Column}).");
         OnFireLevelChanged?.Invoke(cell, 0);
@@ -429,8 +422,10 @@ public class FireManager : MonoBehaviour
     {
         level = Mathf.Clamp(level, 1, MaxFireLevel);
         cell.SetFireLevel(level);
-        cell.SetFireTint(true, GetTint(level));
         UpdateModel(cell, level);
+        // Warna placeholder hanya dipakai kalau tidak ada model api 3D
+        bool hasModel = burning.TryGetValue(cell, out FireState st) && st.model != null;
+        cell.SetFireTint(!hasModel, GetTint(level));
 
         if (logFireEvents) Debug.Log($"Api Lv{level} di Cell ({cell.Row}, {cell.Column}).");
         OnFireLevelChanged?.Invoke(cell, level);
@@ -451,8 +446,8 @@ public class FireManager : MonoBehaviour
         if (!burning.TryGetValue(cell, out FireState state)) return;
         if (state.model != null && state.modelLevel == level) return;
 
-        GameObject[] options = level == 1 ? level1Models : level == 2 ? level2Models : level3Models;
-        GameObject prefab = PickRandom(options);
+        ArenaArt art = grid != null ? grid.Art : null;
+        GameObject prefab = art != null ? ArenaArt.PickRandom(art.GetFireModels(level)) : null;
 
         if (state.model != null)
         {
@@ -462,49 +457,16 @@ public class FireManager : MonoBehaviour
 
         if (prefab == null)
         {
-            SetBaseTileVisible(cell, true);
+            cell.SetBaseVisible(true);
             return;
         }
 
-        // Model dipasang di container terpisah (bukan child cell) supaya tidak ikut scale tile yang gepeng
-        state.model = Instantiate(
-            prefab,
-            cell.transform.position + modelOffset,
-            Quaternion.Euler(modelRotation),
-            modelContainer);
-        state.model.transform.localScale = Vector3.Scale(state.model.transform.localScale, modelScale);
+        // Model api menggantikan tile rumput: disesuaikan otomatis ke ukuran 1 tile
+        float groundY = cell.transform.position.y - cell.transform.lossyScale.y * 0.5f;
+        state.model = art.SpawnFitted(prefab, cell.transform.position, grid.CellSize, groundY, modelContainer, out _);
         state.model.name = $"Fire_L{level}_R{cell.Row}_C{cell.Column}";
         state.modelLevel = level;
-
-        // Model api tidak boleh menghalangi raycast klik tile
-        foreach (Collider col in state.model.GetComponentsInChildren<Collider>())
-        {
-            col.enabled = false;
-        }
-
-        if (hideBaseTileWhenModelShown)
-        {
-            SetBaseTileVisible(cell, false);
-        }
-    }
-
-    private static GameObject PickRandom(GameObject[] options)
-    {
-        if (options == null || options.Length == 0) return null;
-
-        int start = UnityEngine.Random.Range(0, options.Length);
-        for (int i = 0; i < options.Length; i++)
-        {
-            GameObject candidate = options[(start + i) % options.Length];
-            if (candidate != null) return candidate;
-        }
-        return null;
-    }
-
-    private static void SetBaseTileVisible(GridCell cell, bool visible)
-    {
-        MeshRenderer renderer = cell.GetComponent<MeshRenderer>();
-        if (renderer != null) renderer.enabled = visible;
+        cell.SetBaseVisible(false);
     }
 
     // ------------------------------------------------------------------

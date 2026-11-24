@@ -22,6 +22,10 @@ public class GridManager : MonoBehaviour
     [SerializeField] private Material selectedMaterial;
     [SerializeField] private Material hoverMaterial;
 
+    [Header("Arena 3D (model FBX tile)")]
+    [Tooltip("Aset Data/ArenaArt: model rumput, api, dll. Kosong = semua tile pakai kotak placeholder")]
+    [SerializeField] private ArenaArt arenaArt;
+
     [Header("Systems")]
     [SerializeField] private InsightManager insightManager;
     [SerializeField] private TowerData selectedTowerData;
@@ -503,8 +507,79 @@ public class GridManager : MonoBehaviour
         // Baru di-assign setelah semua cell jadi, supaya IsGridReady tidak true terlalu cepat
         cells = newCells;
 
+        SpawnArenaArt();
+        CreateOuterGround();
+
         Debug.Log($"Grid berhasil dibuat: {rows} x {columns} = {rows * columns} cell.");
         OnGridGenerated?.Invoke();
+    }
+
+    // ------------------------------------------------------------------
+    // Visual arena 3D
+    // ------------------------------------------------------------------
+
+    public ArenaArt Art => arenaArt;
+
+    /// <summary>Permukaan tertinggi di arena (dipakai efek datar supaya tidak tertutup model tile).</summary>
+    public float MaxSurfaceY { get; private set; } = 0.075f;
+
+    /// <summary>Batas arena di dunia (X/Z), termasuk baris hutan di pinggir.</summary>
+    public Rect WorldBounds
+    {
+        get
+        {
+            float halfW = columns * cellSize * 0.5f;
+            float halfH = rows * cellSize * 0.5f;
+            Vector3 c = transform.position;
+            return new Rect(c.x - halfW, c.z - halfH, halfW * 2f, halfH * 2f);
+        }
+    }
+
+    private void SpawnArenaArt()
+    {
+        MaxSurfaceY = 0.075f;
+        if (arenaArt == null) return;
+
+        Transform artRoot = new GameObject("Arena Art (3D)").transform;
+        artRoot.SetParent(transform, false);
+
+        int spawned = 0;
+        foreach (GridCell cell in AllCells())
+        {
+            GameObject prefab = ArenaArt.PickRandom(arenaArt.GetModels(cell.Type));
+            if (prefab == null)
+            {
+                MaxSurfaceY = Mathf.Max(MaxSurfaceY, cell.SurfaceY);
+                continue;
+            }
+
+            float groundY = cell.transform.position.y - cell.transform.lossyScale.y * 0.5f;
+            GameObject model = arenaArt.SpawnFitted(prefab, cell.transform.position, cellSize, groundY, artRoot, out float topY);
+            model.name = $"{prefab.name}_R{cell.Row}_C{cell.Column}";
+            cell.SetArtModel(model, topY);
+            MaxSurfaceY = Mathf.Max(MaxSurfaceY, topY);
+            spawned++;
+        }
+
+        Debug.Log($"Arena Art: {spawned} model tile 3D dipasang.");
+    }
+
+    /// <summary>
+    /// Lantai hutan luas di bawah arena, supaya area di luar map & celah antar tile tidak kosong
+    /// (GDD: dark green = surrounding forest).
+    /// </summary>
+    private void CreateOuterGround()
+    {
+        GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
+        ground.name = "Outer Forest Ground";
+        ground.transform.SetParent(transform, false);
+        ground.transform.position = transform.position + Vector3.down * 0.08f;
+        ground.transform.localScale = new Vector3(14f, 1f, 14f); // plane bawaan 10x10 -> 140x140 unit
+        Destroy(ground.GetComponent<Collider>());
+
+        MeshRenderer mr = ground.GetComponent<MeshRenderer>();
+        if (forestMaterial != null) mr.sharedMaterial = forestMaterial;
+        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
     }
 
     private bool ValidateReferences()

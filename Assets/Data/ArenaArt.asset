@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 990b4a2423fbf167c4c7a0c909d4ec16, type: 3}
+  m_Name: ArenaArt
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaArt
+  grassModels:
+  - {fileID: 919132149155446097, guid: 07a01f0b79593a04b9b0796d27c65c5c, type: 3}
+  - {fileID: 919132149155446097, guid: 12dd9e595d160814495370070c9469cb, type: 3}
+  - {fileID: 919132149155446097, guid: b1814a65968c4304f81dc4c7261f21e7, type: 3}
+  - {fileID: 919132149155446097, guid: 2a0d5a2774ac77b4c8004c9e276236c7, type: 3}
+  barePathModels: []
+  forestModels: []
+  wallModels: []
+  fireLevel1Models:
+  - {fileID: 919132149155446097, guid: b3d99fc695647324b9479c4120c248ff, type: 3}
+  - {fileID: 919132149155446097, guid: 906b29ac5248c7a43af50bb847520084, type: 3}
+  - {fileID: 919132149155446097, guid: da8be2dc3bc524f48b90d062be9ec1eb, type: 3}
+  fireLevel2Models:
+  - {fileID: 919132149155446097, guid: 65d7d35514dc0b349bc4d104cc42eed7, type: 3}
+  - {fileID: 919132149155446097, guid: 9792e68a91cc78a40b9671f17cdcad2a, type: 3}
+  - {fileID: 919132149155446097, guid: 3400bb78728943848b23ee7b44f30a5a, type: 3}
+  fireLevel3Models:
+  - {fileID: 919132149155446097, guid: 1cae3db259a9f5a4da58d277382a252d, type: 3}
+  - {fileID: 919132149155446097, guid: a76bdf69f65c58445b28f1e4fb2933b4, type: 3}
+  - {fileID: 919132149155446097, guid: 6c663fa3c5462114c8a1da8d55e71725, type: 3}
+  rotationOffset: {x: 0, y: 0, z: 0}
+  randomYaw: 1
+  footprint: 1
+  surfaceOffset: 0

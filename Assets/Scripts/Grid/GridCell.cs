@@ -8,6 +8,13 @@ public enum TileType
     Wall
 }
 
+/// <summary>
+/// Satu tile arena. Visualnya:
+///  - Model 3D dari ArenaArt kalau ada (kotak placeholder disembunyikan, collider-nya tetap dipakai untuk klik),
+///    kalau tidak ada pakai kotak placeholder berwarna.
+///  - Overlay transparan di atas permukaan tile untuk hover / selected / warna api placeholder,
+///    supaya tetap terlihat di atas model 3D apa pun.
+/// </summary>
 public class GridCell : MonoBehaviour
 {
     [Header("Grid Coordinate")]
@@ -25,12 +32,18 @@ public class GridCell : MonoBehaviour
     [SerializeField] private Material selectedMaterial;
     [SerializeField] private Material hoverMaterial;
 
+    private static readonly Color HoverColor = new Color(1f, 1f, 0.75f, 0.35f);
+    private static readonly Color SelectedColor = new Color(1f, 0.82f, 0.3f, 0.5f);
+
     private MeshRenderer meshRenderer;
-    private MaterialPropertyBlock propBlock;
     private bool isHovered;
     private bool isSelected;
     private bool hasFireTint;
     private Color fireTint = Color.white;
+
+    private GameObject artModel;
+    private float surfaceY;
+    private MeshRenderer overlay;
 
     public int Row => row;
     public int Column => column;
@@ -39,6 +52,10 @@ public class GridCell : MonoBehaviour
     public int FireLevel => fireLevel;
     public bool IsOnFire => fireLevel > 0;
     public Tower OccupyingTower => occupyingTower;
+    public bool HasArtModel => artModel != null;
+
+    /// <summary>Tinggi permukaan atas tile (dunia): tempat tower / musuh berdiri dan overlay digambar.</summary>
+    public float SurfaceY => surfaceY;
 
     // Sesuai GDD: api hanya bisa hidup & menyebar di Grass Field
     public bool IsFlammable => tileType == TileType.Grass;
@@ -49,9 +66,7 @@ public class GridCell : MonoBehaviour
 
         if (meshRenderer == null)
         {
-            Debug.LogError(
-                $"GridCell pada {gameObject.name} tidak memiliki MeshRenderer."
-            );
+            Debug.LogError($"GridCell pada {gameObject.name} tidak memiliki MeshRenderer.");
         }
     }
 
@@ -77,9 +92,42 @@ public class GridCell : MonoBehaviour
         isHovered = false;
         isSelected = false;
 
+        // Permukaan kotak placeholder (tinggi kotak = scale Y, pusat di posisi cell)
+        surfaceY = transform.position.y + transform.lossyScale.y * 0.5f;
+
         gameObject.name = $"Cell_{row}_{column}_{tileType}";
 
+        if (meshRenderer == null) meshRenderer = GetComponent<MeshRenderer>();
+        if (meshRenderer != null && normalMaterial != null) meshRenderer.sharedMaterial = normalMaterial;
+
         UpdateVisual();
+    }
+
+    /// <summary>Pasang model 3D tile (dari ArenaArt). Kotak placeholder disembunyikan.</summary>
+    public void SetArtModel(GameObject model, float topY)
+    {
+        if (artModel != null) Destroy(artModel);
+
+        artModel = model;
+        if (artModel != null)
+        {
+            surfaceY = topY;
+            if (meshRenderer != null) meshRenderer.enabled = false;
+            if (overlay != null) PositionOverlay();
+        }
+    }
+
+    /// <summary>Sembunyikan / tampilkan visual dasar tile (dipakai saat model api menggantikan rumput).</summary>
+    public void SetBaseVisible(bool visible)
+    {
+        if (artModel != null)
+        {
+            artModel.SetActive(visible);
+        }
+        else if (meshRenderer != null)
+        {
+            meshRenderer.enabled = visible;
+        }
     }
 
     public bool CanPlaceTower(TowerData towerData)
@@ -119,10 +167,7 @@ public class GridCell : MonoBehaviour
     {
         if (newTower == null)
         {
-            Debug.LogError(
-                $"Tower untuk Cell_{row}_{column} bernilai null."
-            );
-
+            Debug.LogError($"Tower untuk Cell_{row}_{column} bernilai null.");
             return;
         }
 
@@ -138,11 +183,7 @@ public class GridCell : MonoBehaviour
 
     public void SetHovered(bool hovered)
     {
-        if (isHovered == hovered)
-        {
-            return;
-        }
-
+        if (isHovered == hovered) return;
         isHovered = hovered;
         UpdateVisual();
     }
@@ -185,48 +226,47 @@ public class GridCell : MonoBehaviour
 
     private void UpdateVisual()
     {
-        if (meshRenderer == null)
-        {
-            meshRenderer = GetComponent<MeshRenderer>();
-        }
+        // Prioritas: hover > api (placeholder) > selected > tidak ada overlay
+        Color? color = null;
+        if (isHovered) color = HoverColor;
+        else if (IsOnFire && hasFireTint) color = new Color(fireTint.r, fireTint.g, fireTint.b, 0.7f);
+        else if (isSelected) color = SelectedColor;
 
-        if (meshRenderer == null)
+        if (color == null)
         {
+            if (overlay != null) overlay.enabled = false;
             return;
         }
 
-        bool showFireTint = false;
+        EnsureOverlay();
+        TowerVfx.SetColor(overlay, color.Value);
+        overlay.enabled = true;
+    }
 
-        // Urutan prioritas: hover > api > selected > normal
-        if (isHovered && hoverMaterial != null)
-        {
-            meshRenderer.sharedMaterial = hoverMaterial;
-        }
-        else if (IsOnFire && hasFireTint && normalMaterial != null)
-        {
-            meshRenderer.sharedMaterial = normalMaterial;
-            showFireTint = true;
-        }
-        else if (isSelected && selectedMaterial != null)
-        {
-            meshRenderer.sharedMaterial = selectedMaterial;
-        }
-        else if (normalMaterial != null)
-        {
-            meshRenderer.sharedMaterial = normalMaterial;
-        }
+    private void EnsureOverlay()
+    {
+        if (overlay != null) return;
 
-        if (showFireTint)
-        {
-            if (propBlock == null) propBlock = new MaterialPropertyBlock();
-            meshRenderer.GetPropertyBlock(propBlock);
-            propBlock.SetColor("_BaseColor", fireTint); // URP Lit / Unlit
-            propBlock.SetColor("_Color", fireTint);     // Fallback shader standar
-            meshRenderer.SetPropertyBlock(propBlock);
-        }
-        else
-        {
-            meshRenderer.SetPropertyBlock(null);
-        }
+        // Bukan child cell: cell punya scale gepeng (0.95, 0.15, 0.95) yang akan ikut ke overlay
+        GameObject go = new GameObject($"Overlay_{row}_{column}");
+        go.transform.SetParent(transform.parent, false);
+        go.AddComponent<MeshFilter>().sharedMesh = TowerVfx.FlatQuad;
+        overlay = go.AddComponent<MeshRenderer>();
+        overlay.sharedMaterial = TowerVfx.GroundMaterial; // dekal tanah: dirender sebelum sprite karakter
+        overlay.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        overlay.receiveShadows = false;
+        PositionOverlay();
+    }
+
+    private void PositionOverlay()
+    {
+        float size = Mathf.Max(transform.lossyScale.x, transform.lossyScale.z);
+        overlay.transform.position = new Vector3(transform.position.x, surfaceY + 0.015f, transform.position.z);
+        overlay.transform.localScale = new Vector3(size, 1f, size);
+    }
+
+    private void OnDestroy()
+    {
+        if (overlay != null) Destroy(overlay.gameObject);
     }
 }

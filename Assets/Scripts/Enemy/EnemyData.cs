@@ -41,7 +41,13 @@ public class EnemyData : ScriptableObject
     public float projectileFlightTime = 0.7f;
     public Color projectileColor = new Color(1f, 0.45f, 0.1f);
 
-    [Header("Placeholder Visual")]
+    [Header("Visual 2D (GDD: musuh = sprite 2D)")]
+    [Tooltip("Sprite dari artist (pivot tengah-bawah, 64 PPU). Kosong = sprite placeholder berwarna")]
+    public Sprite sprite;
+    [Tooltip("Skala sprite. Usahakan kelipatan bulat (1, 2) supaya pixel art tetap rapi")]
+    public float spriteScale = 1f;
+
+    [Header("Placeholder Visual (dipakai kalau sprite kosong)")]
     public Color placeholderColor = new Color(0f, 0.75f, 1f);
     public Vector3 placeholderScale = Vector3.one;
 
