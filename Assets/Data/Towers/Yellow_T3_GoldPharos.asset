@@ -39,6 +39,6 @@ MonoBehaviour:
   buffHP: 0
   buffArea: 3
   nextTier: {fileID: 0}
-  towerSprite: {fileID: 0}
+  towerSprite: {fileID: 21300000, guid: c08f1e974ceec6041870df7746a54224, type: 3}
   placeholderMaterial: {fileID: 0}
   placeholderScale: {x: 1, y: 1.4, z: 1}

@@ -28,6 +28,6 @@ MonoBehaviour:
   auraHealPerSecond: 0
   auraArea: 0
   nextTier: {fileID: 11400000, guid: 7c7ea0d5dca72fc21879560e289b9d2d, type: 2}
-  towerSprite: {fileID: 0}
+  towerSprite: {fileID: 21300000, guid: 177e6a42f2d0a294094e397325653f67, type: 3}
   placeholderMaterial: {fileID: 0}
   placeholderScale: {x: 0.7, y: 0.8, z: 0.7}

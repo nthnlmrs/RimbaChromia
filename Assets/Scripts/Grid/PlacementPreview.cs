@@ -94,6 +94,11 @@ public class PlacementPreview : MonoBehaviour
         {
             ShowPlacedTowerRange(hovered);
         }
+        else if (grid.SelectedCell != null && grid.SelectedCell.OccupyingTower != null && Time.timeScale > 0f)
+        {
+            // Tower yang diklik (panel info terbuka) tetap menampilkan jangkauannya
+            ShowPlacedTowerRange(grid.SelectedCell);
+        }
         else
         {
             HideAll();

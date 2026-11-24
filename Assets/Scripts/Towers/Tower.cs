@@ -14,6 +14,26 @@ using UnityEngine;
 /// </summary>
 public class Tower : MonoBehaviour
 {
+    /// <summary>Semua tower yang sedang terpasang (dipakai health bar UI).</summary>
+    public static readonly List<Tower> ActiveTowers = new List<Tower>();
+
+    // Domain Reload dimatikan di project ini -> bersihkan list static setiap kali Play ditekan
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticsOnPlay()
+    {
+        ActiveTowers.Clear();
+    }
+
+    private void OnEnable()
+    {
+        if (!ActiveTowers.Contains(this)) ActiveTowers.Add(this);
+    }
+
+    private void OnDisable()
+    {
+        ActiveTowers.Remove(this);
+    }
+
     [Header("Runtime Data")]
     [SerializeField] private TowerData data;
     [SerializeField] private float currentHP;

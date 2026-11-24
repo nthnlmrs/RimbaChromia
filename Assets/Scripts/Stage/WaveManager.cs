@@ -53,10 +53,14 @@ public class WaveManager : MonoBehaviour
     [SerializeField] private WallHealth wallHealth;
     [SerializeField] private Enemy enemyPrefab;
 
+    [Header("Scenes")]
+    [SerializeField] private string mainMenuScene = "mainMenu";
+
     [Header("Debug")]
     [Tooltip("Tekan untuk langsung mulai wave tanpa menunggu hitung mundur")]
     [SerializeField] private Key skipCountdownKey = Key.N;
-    [SerializeField] private bool showDebugHud = true;
+    [Tooltip("HUD teks lama (IMGUI) untuk debugging. HUD utama = GameHUD (otomatis).")]
+    [SerializeField] private bool showDebugHud = false;
 
     private StageData currentStage;
     private int stageIndex;
@@ -103,6 +107,11 @@ public class WaveManager : MonoBehaviour
         if (showDebugHud && GetComponent<StageDebugHUD>() == null)
         {
             gameObject.AddComponent<StageDebugHUD>();
+        }
+
+        if (FindFirstObjectByType<GameHUD>() == null)
+        {
+            gameObject.AddComponent<GameHUD>();
         }
     }
 
@@ -326,10 +335,29 @@ public class WaveManager : MonoBehaviour
         ReloadScene();
     }
 
+    /// <summary>Langsung mulai wave berikutnya tanpa menunggu hitung mundur (tombol "Mulai Sekarang").</summary>
+    public void SkipCountdown()
+    {
+        if (state == StageState.Preparing || state == StageState.Break)
+        {
+            StartWave(currentWaveIndex + 1);
+        }
+    }
+
+    public void LoadMainMenu()
+    {
+        SelectedStageIndex = -1;
+        LoadScene(mainMenuScene);
+    }
+
     private void ReloadScene()
     {
+        LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    private void LoadScene(string sceneName)
+    {
         Time.timeScale = 1f;
-        string sceneName = SceneManager.GetActiveScene().name;
 
         if (SceneLoader.Instance != null)
         {

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 public class GridManager : MonoBehaviour
@@ -54,6 +55,11 @@ public class GridManager : MonoBehaviour
     public TowerData SelectedTowerData => selectedTowerData;
     public GridCell HoveredCell => hoveredCell;
     public Tower TowerPrefab => towerPrefab;
+    public GridCell SelectedCell => selectedCell;
+    public IReadOnlyList<TowerData> Hotbar => towerHotbar ?? Array.Empty<TowerData>();
+
+    /// <summary>Frame terakhir Esc/klik kanan dipakai untuk membatalkan sesuatu (supaya Esc tidak sekaligus membuka pause).</summary>
+    public int LastCancelFrame { get; private set; } = -1;
     public float TowerHeightOffset => towerHeightOffset;
 
     public bool CanAfford(TowerData towerData)
@@ -149,22 +155,37 @@ public class GridManager : MonoBehaviour
 
     private void Update()
     {
-        HandleHotbarShortcuts();
+        // Game di-pause / Victory / Defeat -> grid tidak menerima input
+        bool paused = Time.timeScale <= 0f;
+
+        if (!paused)
+        {
+            HandleHotbarShortcuts();
+        }
 
         if (Mouse.current == null)
         {
             return;
         }
 
-        GridCell cellUnderCursor = GetCellUnderCursor();
+        // Kursor di atas UI (kartu tower, tombol, panel) -> jangan tembus ke grid
+        bool overUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+        GridCell cellUnderCursor = (paused || overUI) ? null : GetCellUnderCursor();
         UpdateHover(cellUnderCursor);
 
-        // Batal menaruh tower: klik kanan / Esc
+        if (paused)
+        {
+            return;
+        }
+
+        // Batal menaruh tower / batal drag: klik kanan / Esc
         bool cancel = Mouse.current.rightButton.wasPressedThisFrame ||
                       (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame);
-        if (cancel && isPlacing)
+        if (cancel && (isPlacing || dragSource != null))
         {
             CancelPlacement();
+            dragSource = null;
+            LastCancelFrame = Time.frameCount;
         }
 
         HandleDragMerge(cellUnderCursor);
@@ -185,6 +206,34 @@ public class GridManager : MonoBehaviour
     public void CancelPlacement()
     {
         isPlacing = false;
+    }
+
+    /// <summary>
+    /// Dipakai kartu tower saat di-drag lalu dilepas di atas grid.
+    /// Return true kalau tower berhasil dipasang / di-merge.
+    /// </summary>
+    public bool TryPlaceSelectedAt(GridCell cell)
+    {
+        if (cell == null || selectedTowerData == null)
+        {
+            return false;
+        }
+
+        bool placed = TryPlaceOrMergeTower(cell);
+        if (placed)
+        {
+            SelectCell(cell);
+        }
+        return placed;
+    }
+
+    public void ClearSelection()
+    {
+        if (selectedCell != null)
+        {
+            selectedCell.DeselectCell();
+            selectedCell = null;
+        }
     }
 
     // ------------------------------------------------------------------
