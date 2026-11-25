@@ -14,42 +14,42 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DialogueData
   lines:
   - speaker: ""
-    text: "Aku bermimpi berada di sebuah hutan yang begitu hidup..."
+    text: "I was dreaming of a forest so full of life..."
     cg: {fileID: 0}
     backgroundColor: {r: 0.3, g: 0.5, b: 0.32, a: 1}
     shake: 0
   - speaker: ""
-    text: "Pepohonan menjulang tinggi, cahaya menembus dedaunan, dan hewan-hewan berlarian dengan riang."
+    text: "Towering trees, sunlight pouring through the leaves, and animals running around happily."
     cg: {fileID: 0}
     backgroundColor: {r: 0.3, g: 0.5, b: 0.32, a: 1}
     shake: 0
   - speaker: ""
-    text: "DUAARR!!"
+    text: "BOOM!!"
     cg: {fileID: 0}
     backgroundColor: {r: 0.02, g: 0.02, b: 0.02, a: 1}
     shake: 1
   - speaker: "Taduh"
-    text: "Bangunlah... mereka datang."
+    text: "Please wake up... they are coming."
     cg: {fileID: 0}
     backgroundColor: {r: 0.06, g: 0.1, b: 0.08, a: 1}
     shake: 0
-  - speaker: "Kamu"
-    text: "Apa...?"
+  - speaker: "You"
+    text: "What...?"
     cg: {fileID: 0}
     backgroundColor: {r: 0.06, g: 0.1, b: 0.08, a: 1}
     shake: 0
   - speaker: "Taduh"
-    text: "Kita harus bersiap secepat mungkin. Dengarkan aku baik-baik."
+    text: "We need to prepare as quickly as possible. Listen to me carefully."
     cg: {fileID: 0}
     backgroundColor: {r: 0.07, g: 0.17, b: 0.15, a: 1}
     shake: 0
   - speaker: "Taduh"
-    text: "Aku Taduh, roh penjaga hutan ini. Monster api buatan manusia sedang menuju The Wall, jantung hutan kami."
+    text: "I am Taduh, the spirit of this forest. Fire monsters made by humans are marching toward The Wall, the heart of our forest."
     cg: {fileID: 0}
     backgroundColor: {r: 0.07, g: 0.17, b: 0.15, a: 1}
     shake: 0
   - speaker: "Taduh"
-    text: "Akan kupinjamkan kekuatan warna-warna hutan padamu. Ayo, akan kutunjukkan caranya."
+    text: "I will lend you the power of the forest's colors. Come, let me show you how."
     cg: {fileID: 0}
     backgroundColor: {r: 0.07, g: 0.17, b: 0.15, a: 1}
     shake: 0

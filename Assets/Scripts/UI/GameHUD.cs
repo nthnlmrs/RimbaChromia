@@ -4,14 +4,15 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 /// <summary>
-/// HUD utama gameplay (Prioritas 4), dibangun otomatis lewat kode oleh WaveManager:
-///  - Atas kiri  : nama stage, wave, status
-///  - Atas tengah: HP The Wall
-///  - Atas kanan : Insight + tombol pause
-///  - Tengah atas: hitung mundur persiapan/jeda + tombol "Mulai Sekarang", pengumuman wave
-///  - Bawah      : kartu tower (TowerCardBar)
+/// HUD gameplay memakai art dari artist (Assets/Art/UI, mockup di Art/UI/_Reference), dibangun lewat kode:
+///  - Kiri atas   : plate Insight + jumlah insight
+///  - Tengah atas : HP The Wall (plate + isi bar)
+///  - Kanan atas  : plate "WAVE x/y" (saat wave berjalan) atau tombol START NOW (saat persiapan/jeda) + tombol Pause
+///  - Bawah tengah atas: "WAVE N IS STARTING IN..." + hitung mundur
+///  - Bawah       : kartu tower (TowerCardBar) + panel deskripsi
 ///  - Health bar tower & musuh (HealthBarLayer), panel info tower (TowerInfoPanel)
-///  - Menu Jeda (Esc) dan panel Kemenangan / Kekalahan
+///  - Menu PAUSED (Esc / tombol pause): SOUND & MUSIC, QUIT, RESTART, X
+///  - Layar VICTORY / DEFEATED: QUIT, RESTART, NEXT (lanjut stage)
 /// </summary>
 public class GameHUD : MonoBehaviour
 {
@@ -19,27 +20,33 @@ public class GameHUD : MonoBehaviour
     private GridManager grid;
     private WallHealth wall;
     private InsightManager insight;
+    private UISkin skin;
 
     private RectTransform root;
 
-    private TextMeshProUGUI stageText;
-    private TextMeshProUGUI waveText;
-    private TextMeshProUGUI statusText;
+    private TextMeshProUGUI insightText;
     private Image wallFill;
     private TextMeshProUGUI wallText;
-    private TextMeshProUGUI insightText;
 
-    private GameObject countdownPanel;
-    private TextMeshProUGUI countdownTitle;
+    private Image wavePlate;
+    private TextMeshProUGUI wavePlateFallback;
+    private GameObject startNowButton;
+
+    private GameObject countdownGroup;
+    private Image countdownImage;
+    private TextMeshProUGUI countdownFallback;
     private TextMeshProUGUI countdownNumber;
 
     private TextMeshProUGUI announceText;
     private float announceTimer;
 
     private GameObject pauseOverlay;
+    private VolumeRow soundRow;
+    private VolumeRow musicRow;
+
     private GameObject resultOverlay;
-    private TextMeshProUGUI resultTitle;
-    private TextMeshProUGUI resultSubtitle;
+    private Image resultDim;
+    private Image resultBanner;
     private GameObject nextStageButton;
 
     private bool isPaused;
@@ -51,6 +58,12 @@ public class GameHUD : MonoBehaviour
         grid = GridManager.Instance;
         wall = FindFirstObjectByType<WallHealth>();
         insight = InsightManager.Instance;
+        skin = UISkin.Current;
+
+        if (skin == null)
+        {
+            Debug.LogWarning("UISkin tidak ditemukan di Resources. HUD memakai tampilan sederhana.");
+        }
 
         UIKit.EnsureEventSystem();
         Build();
@@ -83,21 +96,19 @@ public class GameHUD : MonoBehaviour
         RectTransform bars = UIKit.Stretch(UIKit.Rect("Health Bars", root));
         bars.gameObject.AddComponent<HealthBarLayer>();
 
-        BuildTopLeft();
-        BuildWallBar();
         BuildInsight();
+        BuildWall();
+        BuildTopRight();
         BuildCountdown();
 
-        announceText = UIKit.Label("Wave Announce", root, "", 96f, TextAlignmentOptions.Center, UIKit.Accent, true);
-        UIKit.Place(announceText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 120f), new Vector2(900f, 140f));
-        announceText.outlineWidth = 0.2f;
-        announceText.outlineColor = new Color32(20, 30, 20, 255);
+        announceText = UIKit.ArtLabel("Wave Announce", root, "", 110f);
+        UIKit.Place(announceText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 120f), new Vector2(1200f, 220f));
         announceText.gameObject.SetActive(false);
 
         if (grid != null)
         {
             RectTransform cardBar = UIKit.Rect("Tower Cards", root);
-            cardBar.gameObject.AddComponent<TowerCardBar>().Build(grid);
+            cardBar.gameObject.AddComponent<TowerCardBar>().Build(grid, root);
 
             RectTransform info = UIKit.Rect("Tower Info", root);
             info.gameObject.AddComponent<TowerInfoPanel>().Build(grid, root);
@@ -110,131 +121,232 @@ public class GameHUD : MonoBehaviour
             guide.gameObject.AddComponent<TutorialGuide>().Build(waves, grid);
         }
 
-        TextMeshProUGUI controls = UIKit.Label("Controls Hint", root,
-            "WASD geser kamera  |  Scroll zoom\nR reset kamera  |  Esc jeda", 17f,
-            TextAlignmentOptions.BottomLeft, new Color(1f, 1f, 1f, 0.6f));
-        UIKit.Place(controls.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(16f, 10f), new Vector2(420f, 48f));
+        TextMeshProUGUI controls = UIKit.ArtLabel("Controls Hint", root,
+            "WASD move camera  |  Scroll zoom  |  R reset camera  |  Esc pause", 20f, TextAlignmentOptions.TopLeft);
+        UIKit.Place(controls.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(40f, -200f), new Vector2(700f, 28f));
+        controls.alpha = 0.75f;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        TextMeshProUGUI debugHint = UIKit.Label("Debug Hint", root,
-            "Debug: F api  X padam  P jeda api  N skip", 16f, TextAlignmentOptions.BottomRight, new Color(1f, 1f, 1f, 0.45f));
-        UIKit.Place(debugHint.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-16f, 10f), new Vector2(500f, 24f));
+        TextMeshProUGUI debugHint = UIKit.ArtLabel("Debug Hint", root,
+            "Debug: F fire  X extinguish  P pause fire  N skip", 18f, TextAlignmentOptions.TopRight);
+        UIKit.Place(debugHint.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-40f, -200f), new Vector2(600f, 26f));
+        debugHint.alpha = 0.55f;
 #endif
 
-        BuildPauseOverlay();
-        BuildResultOverlay();
-    }
-
-    private void BuildTopLeft()
-    {
-        Image panel = UIKit.Panel("Stage Info", root, UIKit.PanelColor);
-        UIKit.Place(panel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -20f), new Vector2(420f, 124f));
-
-        stageText = UIKit.Label("Stage", panel.transform, "Stage", 30f, TextAlignmentOptions.TopLeft, UIKit.TextColor, true);
-        UIKit.Place(stageText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -12f), new Vector2(380f, 38f));
-
-        waveText = UIKit.Label("Wave", panel.transform, "", 24f, TextAlignmentOptions.TopLeft, UIKit.Accent, true);
-        UIKit.Place(waveText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -52f), new Vector2(380f, 30f));
-
-        statusText = UIKit.Label("Status", panel.transform, "", 20f, TextAlignmentOptions.TopLeft, UIKit.TextMuted);
-        UIKit.Place(statusText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -86f), new Vector2(380f, 28f));
-    }
-
-    private void BuildWallBar()
-    {
-        Image panel = UIKit.Panel("Wall", root, UIKit.PanelColor);
-        UIKit.Place(panel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -20f), new Vector2(600f, 84f));
-
-        TextMeshProUGUI label = UIKit.Label("Label", panel.transform, "THE WALL", 20f, TextAlignmentOptions.Top, UIKit.TextMuted, true);
-        UIKit.Place(label.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -8f), new Vector2(560f, 24f));
-
-        wallFill = UIKit.Bar("HP Bar", panel.transform, new Color(0f, 0f, 0f, 0.6f), UIKit.Good, out RectTransform bar);
-        UIKit.Place(bar, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 14f), new Vector2(560f, 30f));
-
-        wallText = UIKit.Label("HP", bar, "100 / 100", 20f, TextAlignmentOptions.Center, UIKit.TextColor, true);
-        UIKit.Stretch(wallText.rectTransform);
+        BuildPauseMenu();
+        BuildResultScreen();
     }
 
     private void BuildInsight()
     {
-        Image panel = UIKit.Panel("Insight", root, UIKit.PanelColor);
-        UIKit.Place(panel.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-104f, -20f), new Vector2(250f, 84f));
+        Image plate = UIKit.ArtImage("Insight", root, skin != null ? skin.insightPlate : null);
+        UIKit.Place(plate.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(36f, -14f),
+            skin != null && skin.insightPlate != null ? skin.insightPlate.rect.size * UIKit.ArtScale : new Vector2(320f, 120f));
+        if (skin == null) plate.color = UIKit.PanelColor;
 
-        Image gem = UIKit.Panel("Icon", panel.transform, UIKit.Accent, false);
-        UIKit.Place(gem.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(40f, 0f), new Vector2(30f, 30f));
-        gem.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+        // Angka di bagian papan kayu (kanan ikon)
+        insightText = UIKit.ArtLabel("Value", plate.transform, "0", 64f);
+        UIKit.Place(insightText.rectTransform, new Vector2(0.67f, 0.55f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(160f, 90f));
+    }
 
-        TextMeshProUGUI label = UIKit.Label("Label", panel.transform, "INSIGHT", 16f, TextAlignmentOptions.TopLeft, UIKit.TextMuted, true);
-        UIKit.Place(label.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(76f, -10f), new Vector2(160f, 20f));
+    private void BuildWall()
+    {
+        Sprite plateSprite = skin != null ? skin.wallPlate : null;
+        Image plate = UIKit.ArtImage("Wall", root, plateSprite);
+        UIKit.Place(plate.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -20f),
+            plateSprite != null ? plateSprite.rect.size * UIKit.ArtScale : new Vector2(456f, 126f));
+        if (plateSprite == null) plate.color = UIKit.PanelColor;
 
-        insightText = UIKit.Label("Value", panel.transform, "15 / 100", 34f, TextAlignmentOptions.BottomLeft, UIKit.TextColor, true);
-        UIKit.Place(insightText.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(76f, 8f), new Vector2(170f, 44f));
+        // Isi bar ditempatkan di slot gelap pada plate (slot: x 138..373, y 42..60 dari atas, plate 397x110)
+        wallFill = UIKit.ArtImage("Fill", plate.transform, skin != null ? skin.wallFill : UIKit.WhiteSprite);
+        wallFill.preserveAspect = false;
+        wallFill.type = Image.Type.Filled;
+        wallFill.fillMethod = Image.FillMethod.Horizontal;
+        wallFill.fillOrigin = 0;
+        RectTransform fill = wallFill.rectTransform;
+        fill.anchorMin = new Vector2(139f / 397f, 1f - 60f / 110f);
+        fill.anchorMax = new Vector2(372f / 397f, 1f - 43f / 110f);
+        fill.offsetMin = Vector2.zero;
+        fill.offsetMax = Vector2.zero;
 
-        Button pause = UIKit.Button("Pause Button", root, "II", 30f, TogglePause);
-        UIKit.Place((RectTransform)pause.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-20f, -20f), new Vector2(72f, 84f));
+        // Angka HP di antara ikon kastil dan bar
+        wallText = UIKit.ArtLabel("Value", plate.transform, "100", 40f);
+        UIKit.Place(wallText.rectTransform, new Vector2(106f / 397f, 1f - 52f / 110f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(90f, 56f));
+    }
+
+    private void BuildTopRight()
+    {
+        float s = UIKit.ArtScale;
+
+        Button pause = UIKit.ArtButton("Pause Button", root, skin?.pauseNormal, skin?.pausePressed, s, TogglePause);
+        RectTransform pauseRt = (RectTransform)pause.transform;
+        UIKit.Place(pauseRt, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-36f, -18f), pauseRt.sizeDelta == Vector2.zero ? new Vector2(126f, 126f) : pauseRt.sizeDelta);
+        if (skin == null) { pause.GetComponent<Image>().color = UIKit.ButtonColor; }
+
+        float leftOfPause = -36f - pauseRt.sizeDelta.x - 24f;
+
+        // Plate WAVE x/y (saat wave berjalan)
+        wavePlate = UIKit.ArtImage("Wave Plate", root, null);
+        UIKit.Place(wavePlate.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(leftOfPause, -26f), new Vector2(256f, 93f) * s);
+        wavePlateFallback = UIKit.ArtLabel("Text", wavePlate.transform, "", 44f);
+        UIKit.Stretch(wavePlateFallback.rectTransform);
+
+        // START NOW (saat persiapan / jeda)
+        Button startNow = UIKit.ArtButton("Start Now", root, skin?.startNow, null, s, () => waves?.SkipCountdown());
+        RectTransform startRt = (RectTransform)startNow.transform;
+        UIKit.Place(startRt, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(leftOfPause, -18f),
+            startRt.sizeDelta == Vector2.zero ? new Vector2(294f, 126f) : startRt.sizeDelta);
+        if (skin == null || skin.startNow == null)
+        {
+            startNow.GetComponent<Image>().color = UIKit.ButtonColor;
+            TextMeshProUGUI t = UIKit.ArtLabel("Text", startRt, "START NOW", 40f);
+            UIKit.Stretch(t.rectTransform);
+        }
+        startNowButton = startNow.gameObject;
     }
 
     private void BuildCountdown()
     {
-        Image panel = UIKit.Panel("Countdown", root, UIKit.PanelColor);
-        UIKit.Place(panel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -120f), new Vector2(520f, 150f));
-        countdownPanel = panel.gameObject;
+        countdownGroup = UIKit.Rect("Countdown", root).gameObject;
+        RectTransform group = (RectTransform)countdownGroup.transform;
+        UIKit.Place(group, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -170f), new Vector2(800f, 60f));
 
-        countdownTitle = UIKit.Label("Title", panel.transform, "", 22f, TextAlignmentOptions.Top, UIKit.TextColor, true);
-        UIKit.Place(countdownTitle.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -10f), new Vector2(500f, 28f));
+        countdownImage = UIKit.ArtImage("Title", group, null);
+        UIKit.Place(countdownImage.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-30f, 0f), new Vector2(563f, 45f));
 
-        countdownNumber = UIKit.Label("Number", panel.transform, "15", 48f, TextAlignmentOptions.Center, UIKit.Accent, true);
-        UIKit.Place(countdownNumber.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -40f), new Vector2(200f, 54f));
+        countdownFallback = UIKit.ArtLabel("Title Text", group, "", 46f);
+        UIKit.Place(countdownFallback.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-30f, 0f), new Vector2(700f, 60f));
 
-        Button skip = UIKit.Button("Skip", panel.transform, "Mulai Sekarang  [N]", 20f, () => waves?.SkipCountdown());
-        UIKit.Place((RectTransform)skip.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 12f), new Vector2(260f, 40f));
+        countdownNumber = UIKit.ArtLabel("Number", group, "15", 56f, TextAlignmentOptions.Left);
+        UIKit.Place(countdownNumber.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 0.5f), new Vector2(270f, 0f), new Vector2(140f, 70f));
     }
 
-    private GameObject BuildOverlay(string name, out RectTransform box, float boxHeight)
+    // ------------------------------------------------------------------
+    // Menu PAUSED
+    // ------------------------------------------------------------------
+
+    private void BuildPauseMenu()
     {
-        Image dim = UIKit.Panel(name, root, new Color(0f, 0f, 0f, 0.6f));
+        Image dim = UIKit.Panel("Pause Menu", root, new Color(0f, 0f, 0f, 0.45f));
         UIKit.Stretch(dim.rectTransform);
+        pauseOverlay = dim.gameObject;
 
-        Image panel = UIKit.Panel("Box", dim.transform, UIKit.PanelColor);
-        box = UIKit.Place(panel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(520f, boxHeight));
+        if (skin == null || skin.pausePanel == null)
+        {
+            // Placeholder sederhana kalau art belum ada
+            Button resume = UIKit.Button("Resume", dim.transform, "RESUME", 32f, TogglePause);
+            UIKit.Place((RectTransform)resume.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 60f), new Vector2(320f, 70f));
+            Button restart = UIKit.Button("Restart", dim.transform, "RESTART", 32f, () => waves?.RestartStage());
+            UIKit.Place((RectTransform)restart.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -30f), new Vector2(320f, 70f));
+            Button quit = UIKit.Button("Quit", dim.transform, "QUIT", 32f, () => waves?.LoadMainMenu());
+            UIKit.Place((RectTransform)quit.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -120f), new Vector2(320f, 70f));
+            pauseOverlay.SetActive(false);
+            return;
+        }
 
-        dim.gameObject.SetActive(false);
-        return dim.gameObject;
+        // Panel dari artist (sudah berisi judul PAUSED, label SOUND/MUSIC, dan gambar tombol)
+        Image panel = UIKit.ArtImage("Panel", dim.transform, skin.pausePanel);
+        UIKit.Place(panel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 20f), panel.rectTransform.sizeDelta);
+        RectTransform p = panel.rectTransform;
+
+        // Tombol interaktif ditumpuk tepat di atas gambar tombol pada panel (koordinat pixel panel 795x629)
+        Button close = UIKit.ArtButton("Close", p, skin.exitNormal, skin.exitPressed, UIKit.ArtScale, TogglePause);
+        UIKit.PlaceOnArt((RectTransform)close.transform, new Vector2(740f, 74f), new Vector2(102f, 102f));
+
+        Button quitButton = UIKit.ArtButton("Quit", p, skin.quitNormal, skin.quitPressed, UIKit.ArtScale, () => waves?.LoadMainMenu());
+        UIKit.PlaceOnArt((RectTransform)quitButton.transform, new Vector2(196.5f, 553.5f), new Vector2(303f, 129f));
+
+        Button restartButton = UIKit.ArtButton("Restart", p, skin.restartNormal, skin.restartPressed, UIKit.ArtScale, () => waves?.RestartStage());
+        UIKit.PlaceOnArt((RectTransform)restartButton.transform, new Vector2(565.5f, 553.5f), new Vector2(303f, 129f));
+
+        // Slider daun SOUND & MUSIC (sejajar label di panel)
+        soundRow = new VolumeRow(p, skin, 275f, () => GameSettings.SoundLevel, v => GameSettings.SoundLevel = v);
+        musicRow = new VolumeRow(p, skin, 374f, () => GameSettings.MusicLevel, v => GameSettings.MusicLevel = v);
+
+        pauseOverlay.SetActive(false);
     }
 
-    private void BuildPauseOverlay()
+    /// <summary>Satu baris volume: panah kiri, 6 daun (klik daun = set level), panah kanan.</summary>
+    private class VolumeRow
     {
-        pauseOverlay = BuildOverlay("Pause Menu", out RectTransform box, 400f);
+        private readonly Image[] leaves = new Image[GameSettings.MaxLevel];
+        private readonly UISkin skin;
+        private readonly System.Func<int> get;
+        private readonly System.Action<int> set;
 
-        TextMeshProUGUI title = UIKit.Label("Title", box, "Jeda", 48f, TextAlignmentOptions.Center, UIKit.TextColor, true);
-        UIKit.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -24f), new Vector2(480f, 64f));
+        public VolumeRow(RectTransform panel, UISkin skin, float rowY, System.Func<int> get, System.Action<int> set)
+        {
+            this.skin = skin;
+            this.get = get;
+            this.set = set;
 
-        AddMenuButton(box, "Lanjut", -120f, TogglePause);
-        AddMenuButton(box, "Ulangi Stage", -200f, () => waves?.RestartStage());
-        AddMenuButton(box, "Menu Utama", -280f, () => waves?.LoadMainMenu());
+            Button left = UIKit.ArtButton("Volume Down", panel, skin.volumeArrowLeft, null, UIKit.ArtScale, () => Change(-1));
+            UIKit.PlaceOnArt((RectTransform)left.transform, new Vector2(275f, rowY), new Vector2(36f, 44f));
+
+            for (int i = 0; i < leaves.Length; i++)
+            {
+                int level = i + 1;
+                Button leaf = UIKit.ArtButton($"Leaf {level}", panel, skin.volumeLeafEmpty, null, UIKit.ArtScale,
+                    () => this.set(this.get() == level ? level - 1 : level)); // klik daun yang sama = turun satu (bisa ke 0)
+                UIKit.PlaceOnArt((RectTransform)leaf.transform, new Vector2(337f + 60f * i, rowY - 2f), new Vector2(48f, 53f));
+                leaves[i] = leaf.GetComponent<Image>();
+            }
+
+            Button right = UIKit.ArtButton("Volume Up", panel, skin.volumeArrowRight, null, UIKit.ArtScale, () => Change(1));
+            UIKit.PlaceOnArt((RectTransform)right.transform, new Vector2(697f, rowY), new Vector2(36f, 44f));
+
+            Refresh();
+        }
+
+        private void Change(int delta)
+        {
+            set(get() + delta);
+        }
+
+        public void Refresh()
+        {
+            int level = get();
+            for (int i = 0; i < leaves.Length; i++)
+            {
+                Sprite lit = skin.volumeLeaves != null && i < skin.volumeLeaves.Length ? skin.volumeLeaves[i] : null;
+                leaves[i].sprite = i < level && lit != null ? lit : skin.volumeLeafEmpty;
+            }
+        }
     }
 
-    private void BuildResultOverlay()
+    // ------------------------------------------------------------------
+    // Layar VICTORY / DEFEATED
+    // ------------------------------------------------------------------
+
+    private void BuildResultScreen()
     {
-        resultOverlay = BuildOverlay("Result", out RectTransform box, 460f);
+        resultDim = UIKit.Panel("Result", root, new Color(0f, 0f, 0f, 0.45f));
+        UIKit.Stretch(resultDim.rectTransform);
+        resultOverlay = resultDim.gameObject;
 
-        resultTitle = UIKit.Label("Title", box, "", 56f, TextAlignmentOptions.Center, UIKit.Accent, true);
-        UIKit.Place(resultTitle.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -24f), new Vector2(480f, 70f));
+        resultBanner = UIKit.ArtImage("Banner", resultDim.transform, null);
+        UIKit.Place(resultBanner.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 90f), new Vector2(1920f, 600f));
 
-        resultSubtitle = UIKit.Label("Subtitle", box, "", 22f, TextAlignmentOptions.Top, UIKit.TextColor);
-        UIKit.Place(resultSubtitle.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -100f), new Vector2(460f, 70f));
-        resultSubtitle.textWrappingMode = TextWrappingModes.Normal;
+        float s = UIKit.ArtScale * 0.9f;
+        float y = -330f;
 
-        nextStageButton = AddMenuButton(box, "Stage Berikutnya", -190f, () => waves?.LoadNextStage()).gameObject;
-        AddMenuButton(box, "Ulangi Stage", -270f, () => waves?.RestartStage());
-        AddMenuButton(box, "Menu Utama", -350f, () => waves?.LoadMainMenu());
-    }
+        Button quit = UIKit.ArtButton("Quit", resultDim.transform, skin?.quitNormal, skin?.quitPressed, s, () => waves?.LoadMainMenu());
+        UIKit.Place((RectTransform)quit.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-200f, y), ((RectTransform)quit.transform).sizeDelta);
 
-    private Button AddMenuButton(RectTransform box, string text, float y, UnityEngine.Events.UnityAction onClick)
-    {
-        Button b = UIKit.Button(text, box, text, 26f, onClick);
-        UIKit.Place((RectTransform)b.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, y), new Vector2(340f, 62f));
-        return b;
+        Button restart = UIKit.ArtButton("Restart", resultDim.transform, skin?.restartNormal, skin?.restartPressed, s, () => waves?.RestartStage());
+        UIKit.Place((RectTransform)restart.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(200f, y), ((RectTransform)restart.transform).sizeDelta);
+
+        // Panah NEXT: lanjut ke stage berikutnya (hanya saat menang dan masih ada stage)
+        Button next = UIKit.ArtButton("Next Stage", resultDim.transform, skin?.nextNormal, skin?.nextPressed, UIKit.ArtScale * 2.2f, () => waves?.LoadNextStage());
+        UIKit.Place((RectTransform)next.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(460f, y), ((RectTransform)next.transform).sizeDelta);
+        nextStageButton = next.gameObject;
+
+        if (skin == null)
+        {
+            foreach (Button b in new[] { quit, restart, next }) b.GetComponent<Image>().color = UIKit.ButtonColor;
+        }
+
+        resultOverlay.SetActive(false);
     }
 
     // ------------------------------------------------------------------
@@ -248,6 +360,12 @@ public class GameHUD : MonoBehaviour
         RefreshCountdown();
         RefreshAnnouncement();
         RefreshResult();
+
+        if (isPaused)
+        {
+            soundRow?.Refresh();
+            musicRow?.Refresh();
+        }
     }
 
     private void HandlePauseKey()
@@ -279,65 +397,63 @@ public class GameHUD : MonoBehaviour
 
     private void RefreshTopBar()
     {
-        if (waves != null)
+        if (insight != null)
         {
-            StageData stage = waves.CurrentStage;
-            stageText.text = stage != null ? stage.stageName : "Stage";
-
-            int shownWave = Mathf.Max(1, waves.State == StageState.WaveRunning || waves.State == StageState.Victory
-                ? waves.CurrentWaveNumber
-                : waves.CurrentWaveNumber + 1);
-            waveText.text = $"Wave {Mathf.Min(shownWave, Mathf.Max(1, waves.TotalWaves))} / {waves.TotalWaves}";
-
-            switch (waves.State)
-            {
-                case StageState.Preparing: statusText.text = "Persiapan - pasang tower!"; break;
-                case StageState.Break: statusText.text = "Jeda - api berhenti menyebar"; break;
-                case StageState.WaveRunning: statusText.text = $"Musuh tersisa: {waves.EnemiesLeftThisWave}"; break;
-                case StageState.Victory: statusText.text = "Stage selesai!"; break;
-                case StageState.Defeat: statusText.text = "The Wall hancur"; break;
-                default: statusText.text = ""; break;
-            }
+            insightText.text = insight.IsFreeCostMode ? "FREE" : insight.CurrentInsight.ToString();
         }
 
         if (wall != null)
         {
             float ratio = wall.MaxHP > 0f ? wall.CurrentHP / wall.MaxHP : 0f;
             wallFill.fillAmount = ratio;
-            wallFill.color = Color.Lerp(UIKit.Danger, UIKit.Good, ratio);
-            wallText.text = $"{Mathf.CeilToInt(wall.CurrentHP)} / {wall.MaxHP:0}";
+            // Art bar sudah berwarna; saat kritis diberi semburat merah
+            wallFill.color = ratio > 0.3f ? Color.white : Color.Lerp(new Color(1f, 0.35f, 0.3f), Color.white, ratio / 0.3f);
+            wallText.text = Mathf.CeilToInt(wall.CurrentHP).ToString();
         }
 
-        if (insight != null)
+        if (waves == null) return;
+
+        bool waiting = waves.State == StageState.Preparing || waves.State == StageState.Break;
+        bool canStart = waiting && !waves.HoldCountdown;
+        if (startNowButton.activeSelf != canStart) startNowButton.SetActive(canStart);
+
+        // Plate wave: wave yang sedang / terakhir berjalan; saat menunggu (tutorial) tampilkan wave berikutnya
+        bool showPlate = !canStart && waves.TotalWaves > 0;
+        if (wavePlate.gameObject.activeSelf != showPlate) wavePlate.gameObject.SetActive(showPlate);
+        if (showPlate)
         {
-            insightText.text = insight.IsFreeCostMode ? "GRATIS" : $"{insight.CurrentInsight} / {insight.MaxInsight}";
+            int current = waiting ? waves.CurrentWaveNumber + 1 : Mathf.Max(1, waves.CurrentWaveNumber);
+            current = Mathf.Clamp(current, 1, waves.TotalWaves);
+            Sprite plate = skin != null ? skin.WavePlate(current, waves.TotalWaves) : null;
+            wavePlate.sprite = plate;
+            wavePlate.color = plate != null ? Color.white : UIKit.PanelColor;
+            wavePlateFallback.text = plate != null ? "" : $"WAVE {current}/{waves.TotalWaves}";
         }
     }
 
     private void RefreshCountdown()
     {
         bool show = waves != null && (waves.State == StageState.Preparing || waves.State == StageState.Break);
-        if (countdownPanel.activeSelf != show) countdownPanel.SetActive(show);
+        if (countdownGroup.activeSelf != show) countdownGroup.SetActive(show);
         if (!show) return;
 
         int next = waves.CurrentWaveNumber + 1;
-        if (waves.HoldCountdown)
+        Sprite title = skin != null ? skin.Countdown(next) : null;
+        countdownImage.enabled = title != null;
+        if (title != null && countdownImage.sprite != title)
         {
-            countdownTitle.text = "Ikuti panduan Taduh dulu";
-            countdownNumber.text = "...";
-            return;
+            countdownImage.sprite = title;
+            countdownImage.rectTransform.sizeDelta = title.rect.size * UIKit.ArtScale;
         }
+        countdownFallback.text = title != null ? "" : $"WAVE {next} IS STARTING IN...";
 
-        countdownTitle.text = waves.State == StageState.Preparing
-            ? $"Persiapan - Wave {next} dimulai dalam"
-            : $"Jeda - Wave {next} dimulai dalam";
-        countdownNumber.text = Mathf.CeilToInt(waves.StateTimeRemaining).ToString();
+        countdownNumber.text = waves.HoldCountdown ? "" : Mathf.CeilToInt(waves.StateTimeRemaining).ToString();
     }
 
     private void HandleWaveStarted(int waveNumber)
     {
         bool last = waves != null && waveNumber == waves.TotalWaves;
-        announceText.text = last ? $"WAVE {waveNumber}\n<size=45%>Wave terakhir!</size>" : $"WAVE {waveNumber}";
+        announceText.text = last ? $"WAVE {waveNumber}\n<size=45%>FINAL WAVE!</size>" : $"WAVE {waveNumber}";
         announceText.gameObject.SetActive(true);
         announceTimer = 1.8f;
     }
@@ -347,9 +463,7 @@ public class GameHUD : MonoBehaviour
         if (announceTimer <= 0f) return;
 
         announceTimer -= Time.unscaledDeltaTime;
-        Color c = announceText.color;
-        c.a = Mathf.Clamp01(announceTimer / 0.6f);
-        announceText.color = c;
+        announceText.alpha = Mathf.Clamp01(announceTimer / 0.6f);
 
         if (announceTimer <= 0f) announceText.gameObject.SetActive(false);
     }
@@ -368,23 +482,25 @@ public class GameHUD : MonoBehaviour
         pauseOverlay.SetActive(false);
         resultOverlay.SetActive(true);
 
-        string stageName = waves.CurrentStage != null ? waves.CurrentStage.stageName : "Stage";
+        bool victory = state == StageState.Victory;
+        Sprite banner = skin != null ? (victory ? skin.victoryBanner : skin.defeatedBanner) : null;
 
-        if (state == StageState.Victory)
+        // Victory: layar diredupkan abu-abu. Defeated: semburat merah (sesuai mockup)
+        resultDim.color = victory ? new Color(0f, 0f, 0f, 0.45f) : new Color(0.3f, 0.05f, 0.05f, 0.55f);
+
+        if (banner != null)
         {
-            resultTitle.text = "KEMENANGAN!";
-            resultTitle.color = UIKit.Accent;
-            resultSubtitle.text = waves.HasNextStage
-                ? $"{stageName} selesai. The Wall tersisa {Mathf.CeilToInt(wall != null ? wall.CurrentHP : 0f)} HP."
-                : "Semua stage selesai! Hutan berhasil diselamatkan.";
-            nextStageButton.SetActive(waves.HasNextStage);
+            resultBanner.sprite = banner;
+            float width = 1920f;
+            resultBanner.rectTransform.sizeDelta = new Vector2(width, width * banner.rect.height / banner.rect.width);
         }
         else
         {
-            resultTitle.text = "KALAH";
-            resultTitle.color = UIKit.Danger;
-            resultSubtitle.text = $"The Wall hancur di {stageName}. Coba susun ulang tower-mu!";
-            nextStageButton.SetActive(false);
+            resultBanner.color = victory ? UIKit.Good : UIKit.Danger;
+            TextMeshProUGUI t = UIKit.ArtLabel("Title", resultBanner.transform, victory ? "VICTORY" : "DEFEATED", 120f);
+            UIKit.Stretch(t.rectTransform);
         }
+
+        nextStageButton.SetActive(victory && waves.HasNextStage);
     }
 }

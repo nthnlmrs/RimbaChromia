@@ -16,7 +16,7 @@ MonoBehaviour:
   color: 2
   role: 2
   tier: 1
-  cost: 5
+  cost: 6
   canPlaceOnBarePath: 0
   canPlaceOnGrass: 1
   maxHP: 75

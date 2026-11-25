@@ -209,6 +209,82 @@ public static class UIKit
         }
     }
 
+    // ------------------------------------------------------------------
+    // Elemen berbasis art dari artist (UISkin)
+    // ------------------------------------------------------------------
+
+    /// <summary>Skala art UI terhadap canvas 1920x1080 (mockup artist dibuat di kanvas ~1440 px).</summary>
+    public const float ArtScale = 1.15f;
+
+    /// <summary>Warna angka di mockup (krem) + outline coklat tua.</summary>
+    public static readonly Color ArtText = new Color(0.86f, 0.77f, 0.64f);
+    public static readonly Color ArtOutline = new Color(0.16f, 0.08f, 0.04f);
+
+    /// <summary>Gambar art dengan ukuran asli sprite x skala.</summary>
+    public static Image ArtImage(string name, Transform parent, Sprite sprite, float scale = ArtScale, bool raycast = false)
+    {
+        RectTransform rt = Rect(name, parent);
+        Image img = rt.gameObject.AddComponent<Image>();
+        img.sprite = sprite;
+        img.raycastTarget = raycast;
+        img.preserveAspect = true;
+        if (sprite != null) rt.sizeDelta = sprite.rect.size * scale;
+        return img;
+    }
+
+    /// <summary>Tombol art: gambar normal, ganti ke gambar "ditekan" saat diklik (SpriteSwap).</summary>
+    public static Button ArtButton(string name, Transform parent, Sprite normal, Sprite pressed, float scale, UnityAction onClick)
+    {
+        Image img = ArtImage(name, parent, normal, scale, true);
+        Button button = img.gameObject.AddComponent<Button>();
+        button.targetGraphic = img;
+
+        if (pressed != null)
+        {
+            button.transition = Selectable.Transition.SpriteSwap;
+            SpriteState states = new SpriteState
+            {
+                highlightedSprite = normal,
+                pressedSprite = pressed,
+                selectedSprite = normal,
+                disabledSprite = pressed
+            };
+            button.spriteState = states;
+        }
+        else
+        {
+            ColorBlock colors = button.colors;
+            colors.highlightedColor = new Color(1.08f, 1.08f, 1.08f);
+            colors.pressedColor = new Color(0.8f, 0.8f, 0.8f);
+            colors.selectedColor = Color.white;
+            button.colors = colors;
+        }
+
+        if (onClick != null) button.onClick.AddListener(onClick);
+        return button;
+    }
+
+    /// <summary>Teks bergaya art (angka insight, HP wall, dll): Jersey 25 krem dengan outline gelap.</summary>
+    public static TextMeshProUGUI ArtLabel(string name, Transform parent, string text, float size,
+        TextAlignmentOptions align = TextAlignmentOptions.Center, Color? color = null)
+    {
+        TextMeshProUGUI tmp = Label(name, parent, text, size, align, color ?? ArtText);
+        tmp.outlineWidth = 0.22f;
+        tmp.outlineColor = ArtOutline;
+        return tmp;
+    }
+
+    /// <summary>Taruh anak di posisi pixel art induknya (koordinat dari KIRI-ATAS gambar induk, seperti di file PNG).</summary>
+    public static RectTransform PlaceOnArt(RectTransform rt, Vector2 pixelCenter, Vector2 pixelSize, float scale = ArtScale)
+    {
+        rt.anchorMin = new Vector2(0f, 1f);
+        rt.anchorMax = new Vector2(0f, 1f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = new Vector2(pixelCenter.x * scale, -pixelCenter.y * scale);
+        rt.sizeDelta = pixelSize * scale;
+        return rt;
+    }
+
     public static Color ColorOfTower(TowerColor color)
     {
         return PlacementPreview.GetTowerColor(color);

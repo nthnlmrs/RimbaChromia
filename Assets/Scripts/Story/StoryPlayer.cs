@@ -113,10 +113,10 @@ public class StoryPlayer : MonoBehaviour
         UIKit.Place(bodyText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -36f), new Vector2(1400f, 170f));
         bodyText.textWrappingMode = TextWrappingModes.Normal;
 
-        continueHint = UIKit.Label("Continue", box.transform, "Klik / Spasi >>", 20f, TextAlignmentOptions.BottomRight, UIKit.TextMuted);
+        continueHint = UIKit.Label("Continue", box.transform, "Click / Space >>", 20f, TextAlignmentOptions.BottomRight, UIKit.TextMuted);
         UIKit.Place(continueHint.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-24f, 14f), new Vector2(300f, 28f));
 
-        Button skip = UIKit.Button("Skip", shakeRoot, "Lewati  >>", 22f, Finish);
+        Button skip = UIKit.Button("Skip", shakeRoot, "Skip  >>", 22f, Finish);
         UIKit.Place((RectTransform)skip.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-30f, -30f), new Vector2(180f, 54f));
     }
 

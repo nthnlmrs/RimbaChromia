@@ -23,13 +23,13 @@ public class TutorialGuide : MonoBehaviour
 
     private static readonly string[] Texts =
     {
-        "Musuh datang dari kiri menuju The Wall. Seret kartu <b>Red Pillar [1]</b> ke <b>JALUR</b> untuk menghadang mereka.",
-        "Bagus! Sekarang seret <b>Blue Sprinkler [5]</b> ke <b>RUMPUT</b> dekat jalur. Ia akan menembak musuh yang lewat.",
-        "Tower yang <b>sama persis</b> bisa digabung jadi lebih kuat. Pasang Blue kedua, lalu <b>seret satu Blue ke Blue lainnya</b>.",
-        "Lihat, rumput terbakar! Api menyebar & melukai tower. Pasang <b>Green Sprout [4]</b> untuk memadamkannya dari mana saja.",
-        "Kau siap! Tekan <b>Mulai Sekarang</b> atau tunggu hitung mundur. Lindungi The Wall!",
+        "Enemies come from the left toward The Wall. Drag the <b>Red Pillar [1]</b> card onto the <b>PATH</b> to block them.",
+        "Nice! Now drag a <b>Blue Sprinkler [5]</b> onto the <b>GRASS</b> next to the path. It shoots enemies passing by.",
+        "Two <b>identical</b> towers can merge into a stronger one. Place a second Blue, then <b>drag one Blue onto the other</b>.",
+        "Look, the grass is on fire! Fire spreads and hurts towers. Place a <b>Green Sprout [4]</b> to put it out from anywhere.",
+        "You're ready! Press <b>START NOW</b> or wait for the countdown. Protect The Wall!",
         "",
-        "Wave berikutnya ada <b>Walking Furnace</b> yang melempar batu api. Tambah penyerang & jaga Green tetap hidup!",
+        "The next wave brings a <b>Walking Furnace</b> that throws burning rocks. Add more attackers and keep your Green alive!",
         ""
     };
 
@@ -49,7 +49,7 @@ public class TutorialGuide : MonoBehaviour
         grid = gridManager;
 
         RectTransform root = (RectTransform)transform;
-        UIKit.Place(root, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 250f), new Vector2(1000f, 112f));
+        UIKit.Place(root, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 400f), new Vector2(1000f, 112f));
         Image bg = root.gameObject.AddComponent<Image>();
         bg.color = UIKit.PanelColor;
         bg.raycastTarget = false;
@@ -127,7 +127,7 @@ public class TutorialGuide : MonoBehaviour
         string text = Texts[(int)s];
         panel.SetActive(!string.IsNullOrEmpty(text));
         body.text = text;
-        progress.text = (int)s < GuidedSteps ? $"Langkah {(int)s + 1} / {GuidedSteps}" : "Tips";
+        progress.text = (int)s < GuidedSteps ? $"Step {(int)s + 1} / {GuidedSteps}" : "Tip";
     }
 
     private static bool HasTower(System.Func<TowerData, bool> match)

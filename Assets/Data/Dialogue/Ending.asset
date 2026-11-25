@@ -14,37 +14,37 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DialogueData
   lines:
   - speaker: ""
-    text: "Serangan terakhir menara hutan menghantam Flame Director. Sang pemimpin api pun tumbang."
+    text: "The towers of the forest strike one final blow. The Flame Director falls."
     cg: {fileID: 0}
     backgroundColor: {r: 0.32, g: 0.08, b: 0.05, a: 1}
     shake: 1
   - speaker: ""
-    text: "Satu per satu, monster api yang tersisa menyerah dan mundur."
+    text: "One by one, the remaining fire monsters surrender and retreat."
     cg: {fileID: 0}
     backgroundColor: {r: 0.32, g: 0.08, b: 0.05, a: 1}
     shake: 0
   - speaker: ""
-    text: "Api dan asap perlahan menghilang. Langit kembali cerah, dan seberkas cahaya menyinari The Wall."
+    text: "The fire and smoke slowly fade away. The sky clears, and a beam of light shines upon The Wall."
     cg: {fileID: 0}
     backgroundColor: {r: 0.55, g: 0.42, b: 0.28, a: 1}
     shake: 0
   - speaker: "Taduh"
-    text: "Kau berhasil... Terima kasih telah melindungi kami."
+    text: "You did it... Thank you for protecting us."
     cg: {fileID: 0}
     backgroundColor: {r: 0.72, g: 0.66, b: 0.45, a: 1}
     shake: 0
   - speaker: "Taduh"
-    text: "Hutan ini selamat dari penggundulan. Para roh hutan tidak akan pernah melupakanmu."
+    text: "The forest is safe from deforestation. The forest spirits will never forget you."
     cg: {fileID: 0}
     backgroundColor: {r: 0.72, g: 0.66, b: 0.45, a: 1}
     shake: 0
   - speaker: ""
-    text: "- TAMAT -"
+    text: "- THE END -"
     cg: {fileID: 0}
     backgroundColor: {r: 0.02, g: 0.02, b: 0.02, a: 1}
     shake: 0
   - speaker: ""
-    text: "RimbaChromia\nGIMERSIA 2026\n\nTerima kasih telah bermain!"
+    text: "RimbaChromia\nGIMERSIA 2026\n\nThank you for playing!"
     cg: {fileID: 0}
     backgroundColor: {r: 0.02, g: 0.02, b: 0.02, a: 1}
     shake: 0

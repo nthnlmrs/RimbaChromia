@@ -5,19 +5,25 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// Deretan kartu tower di bawah layar (isi = Tower Hotbar di GridManager).
-/// Klik kartu = pilih tower lalu klik tile. Drag kartu ke map = langsung pasang (GDD: drag tower).
+/// Deretan kartu tower di bawah layar (isi = Tower Hotbar di GridManager), memakai art kartu dari artist.
+/// - Klik kartu = pilih tower lalu klik tile. Drag kartu ke map = langsung pasang (GDD: drag tower).
+/// - Kartu yang di-hover / dipilih naik ke atas, dan panel deskripsi tower muncul di kiri
+///   (mockup: Art/UI/_Reference/Selected undeployed tower preview).
+/// - Insight tidak cukup = kartu digelapkan.
 /// </summary>
 public class TowerCardBar : MonoBehaviour
 {
-    private const float CardWidth = 150f;
-    private const float CardHeight = 196f;
     private const float Spacing = 14f;
 
     private readonly List<TowerCard> cards = new List<TowerCard>();
+    private Image descriptionPanel;
+    private GridManager grid;
+    private float cardHeight;
 
-    public void Build(GridManager grid)
+    public void Build(GridManager gridManager, RectTransform hudRoot)
     {
+        grid = gridManager;
+        UISkin skin = UISkin.Current;
         RectTransform root = (RectTransform)transform;
 
         List<TowerData> hotbar = new List<TowerData>();
@@ -26,121 +32,124 @@ public class TowerCardBar : MonoBehaviour
             if (data != null) hotbar.Add(data);
         }
 
-        float totalWidth = hotbar.Count * CardWidth + (hotbar.Count - 1) * Spacing;
-        UIKit.Place(root, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 14f),
-            new Vector2(totalWidth + 28f, CardHeight + 28f));
-
-        Image backdrop = root.gameObject.AddComponent<Image>();
-        backdrop.color = new Color(UIKit.PanelColor.r, UIKit.PanelColor.g, UIKit.PanelColor.b, 0.6f);
+        Vector2 cardSize = new Vector2(200f, 250f) * UIKit.ArtScale;
+        cardHeight = cardSize.y;
+        float totalWidth = hotbar.Count * cardSize.x + (hotbar.Count - 1) * Spacing;
+        UIKit.Place(root, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 16f), new Vector2(totalWidth, cardSize.y));
 
         for (int i = 0; i < hotbar.Count; i++)
         {
             RectTransform cardRect = UIKit.Rect($"Card_{i + 1}_{hotbar[i].towerName}", root);
-            float x = -totalWidth / 2f + CardWidth / 2f + i * (CardWidth + Spacing);
-            UIKit.Place(cardRect, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(x, 0f),
-                new Vector2(CardWidth, CardHeight));
+            float x = -totalWidth / 2f + cardSize.x / 2f + i * (cardSize.x + Spacing);
+            UIKit.Place(cardRect, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(x, 0f), cardSize);
 
             TowerCard card = cardRect.gameObject.AddComponent<TowerCard>();
-            card.Build(grid, hotbar[i], i + 1);
+            card.Build(grid, hotbar[i], i + 1, skin);
             cards.Add(card);
+        }
+
+        // Panel deskripsi tower (belum dipasang) di kiri, di atas deretan kartu
+        descriptionPanel = UIKit.ArtImage("Tower Description", hudRoot, null);
+        UIKit.Place(descriptionPanel.rectTransform, Vector2.zero, Vector2.zero, new Vector2(36f, 16f + cardSize.y + 24f), Vector2.zero);
+        descriptionPanel.gameObject.SetActive(false);
+    }
+
+    private void Update()
+    {
+        // Kartu yang sedang di-hover diutamakan, kalau tidak ada pakai kartu yang sedang dipilih
+        TowerCard focus = null;
+        foreach (TowerCard card in cards)
+        {
+            if (card.IsHovered) { focus = card; break; }
+        }
+        if (focus == null)
+        {
+            foreach (TowerCard card in cards)
+            {
+                if (card.IsSelected) { focus = card; break; }
+            }
+        }
+
+        Sprite description = focus != null && UISkin.Current != null ? UISkin.Current.Description(focus.Data.color) : null;
+        bool show = description != null && Time.timeScale > 0f;
+        if (descriptionPanel.gameObject.activeSelf != show) descriptionPanel.gameObject.SetActive(show);
+        if (show && descriptionPanel.sprite != description)
+        {
+            descriptionPanel.sprite = description;
+            descriptionPanel.rectTransform.sizeDelta = description.rect.size * UIKit.ArtScale;
         }
     }
 }
 
-public class TowerCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
+public class TowerCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler,
+    IPointerEnterHandler, IPointerExitHandler
 {
+    private const float RaiseHeight = 70f;
+
     private GridManager grid;
     private TowerData data;
-    private CanvasGroup group;
-    private Image border;
-    private TextMeshProUGUI costText;
+    private Image art;
+    private RectTransform visual;
     private bool dragging;
+    private float raise;
 
-    private static readonly string[] RoleNames = { "Penghalang", "Perangkap", "Insight", "Pemadam", "Penyerang" };
+    public TowerData Data => data;
+    public bool IsHovered { get; private set; }
+    public bool IsSelected => grid != null && grid.IsPlacing && grid.SelectedTowerData == data;
 
-    public void Build(GridManager gridManager, TowerData towerData, int hotkey)
+    public void Build(GridManager gridManager, TowerData towerData, int hotkey, UISkin skin)
     {
         grid = gridManager;
         data = towerData;
-        Color towerColor = UIKit.ColorOfTower(data.color);
 
-        // Root transparan sebagai penerima klik/drag
+        // Root transparan sebagai penerima klik/drag; gambar kartu di anak supaya bisa "naik" tanpa menggeser area klik
         Image hit = gameObject.AddComponent<Image>();
         hit.color = new Color(0f, 0f, 0f, 0f);
-        group = gameObject.AddComponent<CanvasGroup>();
 
-        border = UIKit.Panel("Selected Border", transform, UIKit.Accent, false);
-        UIKit.Stretch(border.rectTransform, -5f);
-        border.enabled = false;
-
-        Image bg = UIKit.Panel("Background", transform, UIKit.PanelLight, false);
-        UIKit.Stretch(bg.rectTransform);
-
-        Image strip = UIKit.Panel("Color Strip", transform, towerColor, false);
-        UIKit.Place(strip.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(150f, 8f));
-
-        // Ikon: sprite dari artist kalau ada, kalau belum pakai kotak warna tower
-        Image icon = UIKit.Panel("Icon", transform, Color.white, false);
-        UIKit.Place(icon.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -14f), new Vector2(72f, 108f));
-        if (data.towerSprite != null)
+        Sprite cardSprite = skin != null ? skin.Card(data.color) : null;
+        if (cardSprite != null)
         {
-            icon.sprite = data.towerSprite;
-            icon.preserveAspect = true;
+            art = UIKit.ArtImage("Card Art", transform, cardSprite);
         }
         else
         {
-            icon.color = towerColor;
-            icon.rectTransform.sizeDelta = new Vector2(56f, 80f);
+            // Placeholder kalau art kartu belum ada
+            art = UIKit.Panel("Card Art", transform, UIKit.ColorOfTower(data.color), false);
+            TextMeshProUGUI label = UIKit.ArtLabel("Name", art.transform, $"{data.towerName}\n{data.cost}", 24f);
+            UIKit.Stretch(label.rectTransform);
         }
+        visual = art.rectTransform;
+        UIKit.Stretch(visual);
 
-        // Badge hotkey (angka keyboard)
-        Image badge = UIKit.Panel("Hotkey", transform, new Color(0f, 0f, 0f, 0.55f), false);
-        UIKit.Place(badge.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(6f, -14f), new Vector2(28f, 28f));
-        TextMeshProUGUI key = UIKit.Label("Key", badge.transform, hotkey.ToString(), 18f, TextAlignmentOptions.Center, UIKit.TextColor, true);
-        UIKit.Stretch(key.rectTransform);
-
-        TextMeshProUGUI nameText = UIKit.Label("Name", transform, data.towerName, 17f, TextAlignmentOptions.Center, UIKit.TextColor, true);
-        UIKit.Place(nameText.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 50f), new Vector2(144f, 22f));
-        nameText.enableAutoSizing = true;
-        nameText.fontSizeMin = 12f;
-        nameText.fontSizeMax = 17f;
-
-        string role = (int)data.role < RoleNames.Length ? RoleNames[(int)data.role] : data.role.ToString();
-        TextMeshProUGUI roleText = UIKit.Label("Role", transform, role, 14f, TextAlignmentOptions.Center, UIKit.TextMuted);
-        UIKit.Place(roleText.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 32f), new Vector2(144f, 18f));
-
-        // Cost: ikon belah ketupat insight + angka
-        Image gem = UIKit.Panel("Insight Icon", transform, UIKit.Accent, false);
-        UIKit.Place(gem.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0.5f), new Vector2(-18f, 16f), new Vector2(13f, 13f));
-        gem.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 45f);
-
-        costText = UIKit.Label("Cost", transform, data.cost.ToString(), 20f, TextAlignmentOptions.Left, UIKit.TextColor, true);
-        UIKit.Place(costText.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 0.5f), new Vector2(-6f, 16f), new Vector2(60f, 24f));
+        // Angka hotkey kecil di pojok (kontrol keyboard 1-6)
+        TextMeshProUGUI key = UIKit.ArtLabel("Hotkey", visual, hotkey.ToString(), 22f, TextAlignmentOptions.TopLeft);
+        UIKit.Place(key.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(12f, -6f), new Vector2(40f, 30f));
     }
 
     private void Update()
     {
         if (grid == null || data == null) return;
 
-        bool affordable = grid.CanAfford(data);
-        group.alpha = affordable ? 1f : 0.5f;
-        costText.color = affordable ? UIKit.TextColor : UIKit.Danger;
-        border.enabled = grid.IsPlacing && grid.SelectedTowerData == data;
+        // Naik saat di-hover / dipilih (animasi halus, tetap jalan walau game dijeda)
+        float target = (IsHovered || IsSelected) && Time.timeScale > 0f ? RaiseHeight : 0f;
+        raise = Mathf.MoveTowards(raise, target, Time.unscaledDeltaTime * 600f);
+        visual.offsetMin = new Vector2(0f, raise);
+        visual.offsetMax = new Vector2(0f, raise);
+
+        // Insight kurang -> gelap
+        art.color = grid.CanAfford(data) ? Color.white : new Color(0.45f, 0.42f, 0.42f);
     }
+
+    public void OnPointerEnter(PointerEventData eventData) => IsHovered = true;
+    public void OnPointerExit(PointerEventData eventData) => IsHovered = false;
 
     public void OnPointerClick(PointerEventData eventData)
     {
         if (dragging || Time.timeScale <= 0f || eventData.button != PointerEventData.InputButton.Left) return;
 
         // Klik kartu yang sedang dipilih = batal
-        if (grid.IsPlacing && grid.SelectedTowerData == data)
-        {
-            grid.CancelPlacement();
-        }
-        else
-        {
-            grid.SetSelectedTowerData(data);
-        }
+        if (IsSelected) grid.CancelPlacement();
+        else grid.SetSelectedTowerData(data);
     }
 
     public void OnBeginDrag(PointerEventData eventData)

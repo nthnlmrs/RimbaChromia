@@ -1,0 +1,167 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4be0a146932123a03287e4a2432f59c8, type: 3}
+  m_Name: UISkin
+  m_EditorClassIdentifier: Assembly-CSharp::UISkin
+  insightPlate: {fileID: 21300000, guid: aa2446d95415d914ab1ed27c0863c812, type: 3}
+  insightIcon: {fileID: 21300000, guid: 1e9ad2924f55f394e9858ec840c32b21, type: 3}
+  wallPlate: {fileID: 21300000, guid: 92eb9aa792c50454c904830a0bb9ec5e, type: 3}
+  wallFill: {fileID: 21300000, guid: a9fe12e2448de564c88a6661954dadbe, type: 3}
+  pauseNormal: {fileID: 67059966090370858, guid: def6b1a594de6984ba8928f9af2ea4eb, type: 3}
+  pausePressed: {fileID: 12381510279535433, guid: def6b1a594de6984ba8928f9af2ea4eb, type: 3}
+  exitNormal: {fileID: 53370674611781319, guid: 45c1aa7200471b142bf67b1441a06a8d, type: 3}
+  exitPressed: {fileID: 28109067505405725, guid: 45c1aa7200471b142bf67b1441a06a8d, type: 3}
+  nextNormal: {fileID: 33455754202222548, guid: c1973bbe844eae14cb8c228aa29f970b, type: 3}
+  nextPressed: {fileID: 17977662465225087, guid: c1973bbe844eae14cb8c228aa29f970b, type: 3}
+  quitNormal: {fileID: 711777672311704, guid: 99740fba7642a8a43b6eeee07615eb74, type: 3}
+  quitPressed: {fileID: 55121576663687633, guid: 99740fba7642a8a43b6eeee07615eb74, type: 3}
+  restartNormal: {fileID: 18593286600080388, guid: 9f6d9d77f8b5b1f4ca92466b28462ed6, type: 3}
+  restartPressed: {fileID: 14065515015067425, guid: 9f6d9d77f8b5b1f4ca92466b28462ed6, type: 3}
+  startNow: {fileID: 21300000, guid: d7a1241ecf9d0af4581d4e6af1754fe6, type: 3}
+  pausePanel: {fileID: 21300000, guid: b33566e4fbcff37468fffe96b5753810, type: 3}
+  volumeArrowLeft: {fileID: 17014532568644624, guid: e9fbf0d37dba7af4fb6425c133399450, type: 3}
+  volumeArrowRight: {fileID: 70898125136236635, guid: e9fbf0d37dba7af4fb6425c133399450, type: 3}
+  volumeLeafEmpty: {fileID: 50545654625512713, guid: e9fbf0d37dba7af4fb6425c133399450, type: 3}
+  volumeLeaves:
+  - {fileID: 57557210685502252, guid: e9fbf0d37dba7af4fb6425c133399450, type: 3}
+  - {fileID: 32856566788686766, guid: e9fbf0d37dba7af4fb6425c133399450, type: 3}
+  - {fileID: 67338762799398853, guid: e9fbf0d37dba7af4fb6425c133399450, type: 3}
+  - {fileID: 7386343805662372, guid: e9fbf0d37dba7af4fb6425c133399450, type: 3}
+  - {fileID: 30998165085361094, guid: e9fbf0d37dba7af4fb6425c133399450, type: 3}
+  - {fileID: 60214805721541948, guid: e9fbf0d37dba7af4fb6425c133399450, type: 3}
+  cards:
+  - {fileID: 21300000, guid: 9327a36327cd90b42819c9e63b8152a7, type: 3}
+  - {fileID: 21300000, guid: 6ec955d9105e7da428af55234f8912fb, type: 3}
+  - {fileID: 21300000, guid: b25229ebbde658240ab08c95feeadd63, type: 3}
+  - {fileID: 21300000, guid: b652317f3af774f4ea5021e80adf0ab1, type: 3}
+  - {fileID: 21300000, guid: 57396ef22c2eabd4e8a02b491152f0ac, type: 3}
+  - {fileID: 21300000, guid: ce565170c6b0b6f4a887a14e84aa0059, type: 3}
+  undeployedDescriptions:
+  - {fileID: 21300000, guid: a5d98e57c72250d4b974c2e2367a99d6, type: 3}
+  - {fileID: 21300000, guid: 9bb340119fa589345a739743dbf75f96, type: 3}
+  - {fileID: 21300000, guid: bbaf23c7b22454a46991fb64dfa930c5, type: 3}
+  - {fileID: 21300000, guid: 0640397b8dcaaa04c9fe61cd345375b0, type: 3}
+  - {fileID: 21300000, guid: 773c8e9a245504c4192dbd93bdcac352, type: 3}
+  - {fileID: 21300000, guid: b233b3ec4f3552f4ba6c7ca24a34c9bb, type: 3}
+  towerInfo:
+  - color: 0
+    tier: 1
+    sprite: {fileID: 21300000, guid: ad5fe1e38d95dc94686d1d48b5b039dd, type: 3}
+    atkLabel: {x: 60, y: 191}
+    hpLabel: {x: 50, y: 217}
+  - color: 0
+    tier: 2
+    sprite: {fileID: 21300000, guid: 5b5b3409f2e207b4289c8215823e1a2d, type: 3}
+    atkLabel: {x: 60, y: 217}
+    hpLabel: {x: 50, y: 243}
+  - color: 0
+    tier: 3
+    sprite: {fileID: 21300000, guid: d59bbc96ed42ed441b3ab8a41bef5e86, type: 3}
+    atkLabel: {x: 60, y: 159}
+    hpLabel: {x: 50, y: 185}
+  - color: 1
+    tier: 1
+    sprite: {fileID: 21300000, guid: bd9139566b37d5f44b8dbc24faeae3f0, type: 3}
+    atkLabel: {x: 60, y: 191}
+    hpLabel: {x: 50, y: 217}
+  - color: 1
+    tier: 2
+    sprite: {fileID: 21300000, guid: d02e7229369f81747807be41f461f3dc, type: 3}
+    atkLabel: {x: 60, y: 217}
+    hpLabel: {x: 50, y: 243}
+  - color: 1
+    tier: 3
+    sprite: {fileID: 21300000, guid: 8a7a88a84e14ae942b2e0f601b08307a, type: 3}
+    atkLabel: {x: 60, y: 159}
+    hpLabel: {x: 50, y: 185}
+  - color: 2
+    tier: 1
+    sprite: {fileID: 21300000, guid: d8da6f2f3b21fec4ca1b4d66f7d04f45, type: 3}
+    atkLabel: {x: 60, y: 165}
+    hpLabel: {x: 50, y: 191}
+  - color: 2
+    tier: 2
+    sprite: {fileID: 21300000, guid: 327f13f98f825664985814d2d1916fb5, type: 3}
+    atkLabel: {x: 60, y: 165}
+    hpLabel: {x: 50, y: 191}
+  - color: 2
+    tier: 3
+    sprite: {fileID: 21300000, guid: ea9b3fd99b5176c4fa47eb24ee42c68e, type: 3}
+    atkLabel: {x: 60, y: 107}
+    hpLabel: {x: 50, y: 133}
+  - color: 3
+    tier: 1
+    sprite: {fileID: 21300000, guid: 985f02cd342ef9a40aafcf92b29993d2, type: 3}
+    atkLabel: {x: 60, y: 191}
+    hpLabel: {x: 50, y: 217}
+  - color: 3
+    tier: 2
+    sprite: {fileID: 21300000, guid: 458d7b5cbd12af04d94113640ec52f0b, type: 3}
+    atkLabel: {x: 60, y: 243}
+    hpLabel: {x: 50, y: 269}
+  - color: 3
+    tier: 3
+    sprite: {fileID: 21300000, guid: 2b09991746fa38f4ca7cc385d12e631d, type: 3}
+    atkLabel: {x: 60, y: 186}
+    hpLabel: {x: 50, y: 212}
+  - color: 4
+    tier: 1
+    sprite: {fileID: 21300000, guid: da3cd704d3fd019498cdf733bf57026b, type: 3}
+    atkLabel: {x: 60, y: 165}
+    hpLabel: {x: 50, y: 191}
+  - color: 4
+    tier: 2
+    sprite: {fileID: 21300000, guid: 9c48325e99787774183503627a125a85, type: 3}
+    atkLabel: {x: 60, y: 192}
+    hpLabel: {x: 50, y: 218}
+  - color: 4
+    tier: 3
+    sprite: {fileID: 21300000, guid: 20bef34568e48ba4f86e0e2b0b970ef7, type: 3}
+    atkLabel: {x: 60, y: 134}
+    hpLabel: {x: 50, y: 160}
+  - color: 5
+    tier: 1
+    sprite: {fileID: 21300000, guid: 55aaa5587b2f578469a35b424217d383, type: 3}
+    atkLabel: {x: 60, y: 191}
+    hpLabel: {x: 50, y: 217}
+  - color: 5
+    tier: 2
+    sprite: {fileID: 21300000, guid: 97e994b3ae4480d419462e30c1b2ded8, type: 3}
+    atkLabel: {x: 60, y: 218}
+    hpLabel: {x: 50, y: 244}
+  - color: 5
+    tier: 3
+    sprite: {fileID: 21300000, guid: d9463b9dbaea63c4c8d49bf5e526bb19, type: 3}
+    atkLabel: {x: 60, y: 160}
+    hpLabel: {x: 50, y: 186}
+  waveCountdown:
+  - {fileID: 21300000, guid: 0524adc4564bb2a43b39e80999687289, type: 3}
+  - {fileID: 21300000, guid: 859a0f7241655b242a081a16f4dad40c, type: 3}
+  - {fileID: 21300000, guid: bd873a97beba03d4c8016df9a8368a5f, type: 3}
+  wavePlates:
+  - current: 1
+    total: 2
+    sprite: {fileID: 21300000, guid: eb34b07ecaec100468c48f69244e99c4, type: 3}
+  - current: 2
+    total: 2
+    sprite: {fileID: 21300000, guid: 624b951cc6d860d4d8116ad76ad2eec8, type: 3}
+  - current: 1
+    total: 3
+    sprite: {fileID: 21300000, guid: fbf7a417f01e90840bfd4df894c5cdb0, type: 3}
+  - current: 2
+    total: 3
+    sprite: {fileID: 21300000, guid: 8ed2ac2a372b13440afaacc3c6f8bdec, type: 3}
+  - current: 3
+    total: 3
+    sprite: {fileID: 21300000, guid: 0ca4f38dc5a10a644b1b6fd55e30891b, type: 3}
+  victoryBanner: {fileID: 21300000, guid: b3f7f99500e7a244c93b0463cf422792, type: 3}
+  defeatedBanner: {fileID: 21300000, guid: 41169b6ed20085941aedd5c5c749240a, type: 3}
