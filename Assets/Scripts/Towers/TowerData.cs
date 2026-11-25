@@ -67,6 +67,10 @@ public class TowerData : ScriptableObject
     [Header("Upgrade / Merge")]
     public TowerData nextTier; // Kosongkan jika sudah Tier 3
 
+    [Header("Arah hadap sprite")]
+    [Tooltip("Centang kalau gambar tower menghadap KANAN. Tower penembak (Blue) & Green dibalik menghadap targetnya")]
+    public bool spriteFacesRight = false;
+
     [Header("Final Visual (2.5D Sprite)")]
     public Sprite towerSprite; // Isi nanti kalau gambar dari artist sudah jadi
 

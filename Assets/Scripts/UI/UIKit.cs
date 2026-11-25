@@ -214,7 +214,7 @@ public static class UIKit
     // ------------------------------------------------------------------
 
     /// <summary>Skala art UI terhadap canvas 1920x1080 (mockup artist dibuat di kanvas ~1440 px).</summary>
-    public const float ArtScale = 1.15f;
+    public const float ArtScale = 0.85f;
 
     /// <summary>Warna angka di mockup (krem) + outline coklat tua.</summary>
     public static readonly Color ArtText = new Color(0.86f, 0.77f, 0.64f);

@@ -44,6 +44,8 @@ public class EnemyData : ScriptableObject
     [Header("Visual 2D (GDD: musuh = sprite 2D)")]
     [Tooltip("Sprite dari artist (pivot tengah-bawah, 64 PPU). Kosong = sprite placeholder berwarna")]
     public Sprite sprite;
+    [Tooltip("Centang kalau gambar musuh menghadap KANAN. Musuh dibalik menghadap arah jalan / targetnya")]
+    public bool spriteFacesRight = true;
     [Tooltip("Skala sprite. Usahakan kelipatan bulat (1, 2) supaya pixel art tetap rapi")]
     public float spriteScale = 1f;
 

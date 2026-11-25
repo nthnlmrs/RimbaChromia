@@ -201,6 +201,8 @@ public class Tower : MonoBehaviour
         }
 
         TowerVfx.Pulse(occupiedCell.transform.position, AreaSize(data.trapDamageArea), TowerVfx.ColorOf(data.color), 0.4f);
+        PixelVfx.Burst(transform.position + Vector3.up * 0.35f, PixelArt.BurstStyle.Fire, TowerVfx.ColorOf(data.color), 1.4f + 0.3f * (data.tier - 1));
+        PixelVfx.Debris(transform.position + Vector3.up * 0.2f, new Color(0.55f, 0.35f, 0.2f), 6, 1.6f);
 
         // Trap SEKALI PAKAI: setelah meledak langsung habis (tier lebih tinggi = ledakan lebih besar)
         Debug.Log($"{data.towerName} meledak ({Damage:0} dmg ke {enemyBuffer.Count} musuh) dan habis terpakai.");
@@ -227,7 +229,7 @@ public class Tower : MonoBehaviour
 
             // Kilatan di atas kepala tower supaya tidak tertutup badan silinder placeholder
             float top = transform.position.y + (billboard != null ? billboard.VisualHeight : 1f) + 0.05f;
-            TowerVfx.PulseAtHeight(transform.position, top, cellSize * 1.4f, new Color(1f, 0.95f, 0.3f), 0.5f);
+            PixelVfx.Sparkles(new Vector3(transform.position.x, top - 0.1f, transform.position.z), PixelVfx.InsightBlue, 3, 0.2f);
         }
     }
 
@@ -251,8 +253,10 @@ public class Tower : MonoBehaviour
         }
 
         actionTimer = 0f;
+        FaceTowards(target.transform.position);
         fire.ReduceFire(target, data.fireReducePerShot);
         ShowBeam(target.transform.position + Vector3.up * 0.1f);
+        PixelVfx.Sparkles(target.transform.position + Vector3.up * 0.25f, PixelVfx.HealGreen, 4, 0.3f, 0.7f);
     }
 
     private void HandleHealAura(float dt)
@@ -297,6 +301,7 @@ public class Tower : MonoBehaviour
         }
 
         actionTimer = 0f;
+        FaceTowards(target.transform.position);
         TowerVfx.FireProjectile(transform.position + Vector3.up * 0.6f, target, Damage, TowerVfx.ColorOf(data.color));
     }
 
@@ -348,6 +353,11 @@ public class Tower : MonoBehaviour
         }
 
         TowerVfx.Pulse(occupiedCell.transform.position, cellSize * 5f, TowerVfx.ColorOf(data.color), 0.45f);
+        PixelVfx.Burst(transform.position + Vector3.up * 0.9f, PixelArt.BurstStyle.Magic, TowerVfx.ColorOf(data.color), 1.2f);
+        foreach (Enemy hit in enemyBuffer)
+        {
+            PixelVfx.Sparkles(hit.transform.position + Vector3.up * 0.3f, TowerVfx.ColorOf(data.color), 2, 0.15f, 0.5f);
+        }
     }
 
     // ------------------------------------------------------------------
@@ -477,6 +487,15 @@ public class Tower : MonoBehaviour
         Destroy(gameObject);
     }
 
+    /// <summary>Balik sprite ke kiri / kanan menghadap posisi target.</summary>
+    private void FaceTowards(Vector3 worldTarget)
+    {
+        if (billboard == null) return;
+        float dx = worldTarget.x - transform.position.x;
+        if (Mathf.Abs(dx) < 0.05f) return; // target tepat di depan/belakang: pertahankan arah sekarang
+        billboard.SetFacing(dx > 0f, data.spriteFacesRight);
+    }
+
     private void TriggerMergeEffect()
     {
         // Red: kebal damage sementara
@@ -495,6 +514,7 @@ public class Tower : MonoBehaviour
         actionTimer = 0f;
         if (billboard != null) billboard.SetScale(DisplayScaleFor(data), pop: true); // tumbuh + efek pop
         TowerVfx.Pulse(transform.position, cellSize * 1.6f, TowerVfx.ColorOf(data.color), 0.5f);
+        PixelVfx.Sparkles(transform.position + Vector3.up * 0.6f, TowerVfx.ColorOf(data.color), 8, 0.45f, 1.1f);
         Debug.Log($"Merge berhasil! Naik ke {data.towerName} (Tier {data.tier}), HP penuh: {currentHP}/{MaxHP}.");
     }
 
@@ -537,6 +557,7 @@ public class Tower : MonoBehaviour
         }
 
         TowerVfx.Pulse(transform.position, cellSize, new Color(0.2f, 0.2f, 0.2f), 0.4f);
+        PixelVfx.Burst(transform.position + Vector3.up * 0.5f, PixelArt.BurstStyle.Smoke, Color.gray, 1.5f);
         OnTowerDestroyed?.Invoke(this);
         Destroy(gameObject);
     }
@@ -635,14 +656,15 @@ public class Tower : MonoBehaviour
             beam = beamObject.AddComponent<LineRenderer>();
             beam.positionCount = 2;
             beam.useWorldSpace = true;
-            beam.startWidth = 0.12f;
-            beam.endWidth = 0.05f;
+            beam.startWidth = 0.14f;
+            beam.endWidth = 0.1f;
+            beam.textureMode = LineTextureMode.Tile;
             beam.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             beam.receiveShadows = false;
-            beam.sharedMaterial = TowerVfx.UnlitMaterial;
+            beam.sharedMaterial = PixelArt.BeamMaterial(PixelVfx.HealGreen); // garis beam bergaya pixel
 
-            beam.startColor = new Color(0.45f, 1f, 0.55f, 1f);
-            beam.endColor = new Color(0.8f, 1f, 0.9f, 0.6f);
+            beam.startColor = Color.white;
+            beam.endColor = new Color(1f, 1f, 1f, 0.75f);
         }
 
         beam.SetPosition(0, transform.position + Vector3.up * 0.7f);

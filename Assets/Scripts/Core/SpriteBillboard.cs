@@ -118,6 +118,17 @@ public class SpriteBillboard : MonoBehaviour
         return billboard;
     }
 
+    /// <summary>
+    /// Hadapkan sprite ke kiri / kanan (dibalik horizontal). artFacesRight = arah hadap gambar aslinya.
+    /// </summary>
+    public void SetFacing(bool faceRight, bool artFacesRight)
+    {
+        bool flip = faceRight != artFacesRight;
+        if (spriteRenderer.flipX == flip) return;
+        spriteRenderer.flipX = flip;
+        if (shadowCaster != null) shadowCaster.flipX = flip;
+    }
+
     public void SetSprite(Sprite sprite)
     {
         spriteRenderer.sprite = sprite;

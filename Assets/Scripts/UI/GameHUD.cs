@@ -101,7 +101,7 @@ public class GameHUD : MonoBehaviour
         BuildTopRight();
         BuildCountdown();
 
-        announceText = UIKit.ArtLabel("Wave Announce", root, "", 110f);
+        announceText = UIKit.ArtLabel("Wave Announce", root, "", 96f);
         UIKit.Place(announceText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 120f), new Vector2(1200f, 220f));
         announceText.gameObject.SetActive(false);
 
@@ -123,13 +123,13 @@ public class GameHUD : MonoBehaviour
 
         TextMeshProUGUI controls = UIKit.ArtLabel("Controls Hint", root,
             "WASD move camera  |  Scroll zoom  |  R reset camera  |  Esc pause", 20f, TextAlignmentOptions.TopLeft);
-        UIKit.Place(controls.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(40f, -200f), new Vector2(700f, 28f));
+        UIKit.Place(controls.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(36f, -150f), new Vector2(700f, 28f));
         controls.alpha = 0.75f;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         TextMeshProUGUI debugHint = UIKit.ArtLabel("Debug Hint", root,
             "Debug: F fire  X extinguish  P pause fire  N skip", 18f, TextAlignmentOptions.TopRight);
-        UIKit.Place(debugHint.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-40f, -200f), new Vector2(600f, 26f));
+        UIKit.Place(debugHint.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-36f, -150f), new Vector2(600f, 26f));
         debugHint.alpha = 0.55f;
 #endif
 
@@ -145,8 +145,8 @@ public class GameHUD : MonoBehaviour
         if (skin == null) plate.color = UIKit.PanelColor;
 
         // Angka di bagian papan kayu (kanan ikon)
-        insightText = UIKit.ArtLabel("Value", plate.transform, "0", 64f);
-        UIKit.Place(insightText.rectTransform, new Vector2(0.67f, 0.55f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(160f, 90f));
+        insightText = UIKit.ArtLabel("Value", plate.transform, "0", 48f);
+        UIKit.Place(insightText.rectTransform, new Vector2(0.67f, 0.55f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(130f, 70f));
     }
 
     private void BuildWall()
@@ -154,7 +154,7 @@ public class GameHUD : MonoBehaviour
         Sprite plateSprite = skin != null ? skin.wallPlate : null;
         Image plate = UIKit.ArtImage("Wall", root, plateSprite);
         UIKit.Place(plate.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -20f),
-            plateSprite != null ? plateSprite.rect.size * UIKit.ArtScale : new Vector2(456f, 126f));
+            plateSprite != null ? plateSprite.rect.size * UIKit.ArtScale : new Vector2(340f, 94f));
         if (plateSprite == null) plate.color = UIKit.PanelColor;
 
         // Isi bar ditempatkan di slot gelap pada plate (slot: x 138..373, y 42..60 dari atas, plate 397x110)
@@ -170,8 +170,8 @@ public class GameHUD : MonoBehaviour
         fill.offsetMax = Vector2.zero;
 
         // Angka HP di antara ikon kastil dan bar
-        wallText = UIKit.ArtLabel("Value", plate.transform, "100", 40f);
-        UIKit.Place(wallText.rectTransform, new Vector2(106f / 397f, 1f - 52f / 110f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(90f, 56f));
+        wallText = UIKit.ArtLabel("Value", plate.transform, "100", 30f);
+        UIKit.Place(wallText.rectTransform, new Vector2(106f / 397f, 1f - 52f / 110f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(70f, 44f));
     }
 
     private void BuildTopRight()
@@ -180,26 +180,26 @@ public class GameHUD : MonoBehaviour
 
         Button pause = UIKit.ArtButton("Pause Button", root, skin?.pauseNormal, skin?.pausePressed, s, TogglePause);
         RectTransform pauseRt = (RectTransform)pause.transform;
-        UIKit.Place(pauseRt, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-36f, -18f), pauseRt.sizeDelta == Vector2.zero ? new Vector2(126f, 126f) : pauseRt.sizeDelta);
+        UIKit.Place(pauseRt, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-36f, -18f), pauseRt.sizeDelta == Vector2.zero ? new Vector2(94f, 94f) : pauseRt.sizeDelta);
         if (skin == null) { pause.GetComponent<Image>().color = UIKit.ButtonColor; }
 
-        float leftOfPause = -36f - pauseRt.sizeDelta.x - 24f;
+        float leftOfPause = -36f - pauseRt.sizeDelta.x - 18f;
 
         // Plate WAVE x/y (saat wave berjalan)
         wavePlate = UIKit.ArtImage("Wave Plate", root, null);
         UIKit.Place(wavePlate.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(leftOfPause, -26f), new Vector2(256f, 93f) * s);
-        wavePlateFallback = UIKit.ArtLabel("Text", wavePlate.transform, "", 44f);
+        wavePlateFallback = UIKit.ArtLabel("Text", wavePlate.transform, "", 34f);
         UIKit.Stretch(wavePlateFallback.rectTransform);
 
         // START NOW (saat persiapan / jeda)
         Button startNow = UIKit.ArtButton("Start Now", root, skin?.startNow, null, s, () => waves?.SkipCountdown());
         RectTransform startRt = (RectTransform)startNow.transform;
         UIKit.Place(startRt, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(leftOfPause, -18f),
-            startRt.sizeDelta == Vector2.zero ? new Vector2(294f, 126f) : startRt.sizeDelta);
+            startRt.sizeDelta == Vector2.zero ? new Vector2(218f, 94f) : startRt.sizeDelta);
         if (skin == null || skin.startNow == null)
         {
             startNow.GetComponent<Image>().color = UIKit.ButtonColor;
-            TextMeshProUGUI t = UIKit.ArtLabel("Text", startRt, "START NOW", 40f);
+            TextMeshProUGUI t = UIKit.ArtLabel("Text", startRt, "START NOW", 30f);
             UIKit.Stretch(t.rectTransform);
         }
         startNowButton = startNow.gameObject;
@@ -209,16 +209,16 @@ public class GameHUD : MonoBehaviour
     {
         countdownGroup = UIKit.Rect("Countdown", root).gameObject;
         RectTransform group = (RectTransform)countdownGroup.transform;
-        UIKit.Place(group, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -170f), new Vector2(800f, 60f));
+        UIKit.Place(group, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -128f), new Vector2(640f, 50f));
 
         countdownImage = UIKit.ArtImage("Title", group, null);
-        UIKit.Place(countdownImage.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-30f, 0f), new Vector2(563f, 45f));
+        UIKit.Place(countdownImage.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-24f, 0f), new Vector2(417f, 33f));
 
-        countdownFallback = UIKit.ArtLabel("Title Text", group, "", 46f);
-        UIKit.Place(countdownFallback.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-30f, 0f), new Vector2(700f, 60f));
+        countdownFallback = UIKit.ArtLabel("Title Text", group, "", 34f);
+        UIKit.Place(countdownFallback.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-24f, 0f), new Vector2(560f, 50f));
 
-        countdownNumber = UIKit.ArtLabel("Number", group, "15", 56f, TextAlignmentOptions.Left);
-        UIKit.Place(countdownNumber.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 0.5f), new Vector2(270f, 0f), new Vector2(140f, 70f));
+        countdownNumber = UIKit.ArtLabel("Number", group, "15", 44f, TextAlignmentOptions.Left);
+        UIKit.Place(countdownNumber.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 0.5f), new Vector2(200f, 0f), new Vector2(110f, 56f));
     }
 
     // ------------------------------------------------------------------
@@ -328,17 +328,17 @@ public class GameHUD : MonoBehaviour
         UIKit.Place(resultBanner.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 90f), new Vector2(1920f, 600f));
 
         float s = UIKit.ArtScale * 0.9f;
-        float y = -330f;
+        float y = -300f;
 
         Button quit = UIKit.ArtButton("Quit", resultDim.transform, skin?.quitNormal, skin?.quitPressed, s, () => waves?.LoadMainMenu());
-        UIKit.Place((RectTransform)quit.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-200f, y), ((RectTransform)quit.transform).sizeDelta);
+        UIKit.Place((RectTransform)quit.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-165f, y), ((RectTransform)quit.transform).sizeDelta);
 
         Button restart = UIKit.ArtButton("Restart", resultDim.transform, skin?.restartNormal, skin?.restartPressed, s, () => waves?.RestartStage());
-        UIKit.Place((RectTransform)restart.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(200f, y), ((RectTransform)restart.transform).sizeDelta);
+        UIKit.Place((RectTransform)restart.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(165f, y), ((RectTransform)restart.transform).sizeDelta);
 
         // Panah NEXT: lanjut ke stage berikutnya (hanya saat menang dan masih ada stage)
         Button next = UIKit.ArtButton("Next Stage", resultDim.transform, skin?.nextNormal, skin?.nextPressed, UIKit.ArtScale * 2.2f, () => waves?.LoadNextStage());
-        UIKit.Place((RectTransform)next.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(460f, y), ((RectTransform)next.transform).sizeDelta);
+        UIKit.Place((RectTransform)next.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(390f, y), ((RectTransform)next.transform).sizeDelta);
         nextStageButton = next.gameObject;
 
         if (skin == null)
@@ -486,7 +486,7 @@ public class GameHUD : MonoBehaviour
         Sprite banner = skin != null ? (victory ? skin.victoryBanner : skin.defeatedBanner) : null;
 
         // Victory: layar diredupkan abu-abu. Defeated: semburat merah (sesuai mockup)
-        resultDim.color = victory ? new Color(0f, 0f, 0f, 0.45f) : new Color(0.3f, 0.05f, 0.05f, 0.55f);
+        resultDim.color = victory ? new Color(0f, 0f, 0f, 0.45f) : new Color(0.36f, 0.16f, 0.17f, 0.82f);
 
         if (banner != null)
         {

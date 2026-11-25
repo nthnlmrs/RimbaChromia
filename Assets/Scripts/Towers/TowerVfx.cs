@@ -1,8 +1,8 @@
 using UnityEngine;
 
 /// <summary>
-/// Efek visual PLACEHOLDER untuk tower (peluru, gelombang ledakan / aura).
-/// Nanti diganti efek dari artist (Asset List GDD: "Attack animation (Tower)" & "Effect").
+/// Efek visual tower & musuh (peluru, gelombang, lemparan api), bergaya pixel art lewat PixelVfx.
+/// Bisa diganti sprite dari artist nanti (Asset List GDD: "Attack animation (Tower)" & "Effect").
 /// </summary>
 public static class TowerVfx
 {
@@ -75,6 +75,11 @@ public static class TowerVfx
         float ground = GridManager.Instance != null ? GridManager.Instance.MaxSurfaceY : 0.075f;
         if (height <= ground + 0.15f) mr.sharedMaterial = GroundMaterial;
 
+        // Bentuk cincin pixel (bukan kotak penuh)
+        MaterialPropertyBlock block = new MaterialPropertyBlock();
+        block.SetTexture("_MainTex", PixelArt.RingTexture());
+        mr.SetPropertyBlock(block);
+
         VfxPulse pulse = go.AddComponent<VfxPulse>();
         pulse.Init(mr, size, color, duration);
     }
@@ -86,14 +91,12 @@ public static class TowerVfx
 
         GameObject go = new GameObject("Vfx_Projectile");
         go.transform.position = from;
-        go.transform.localScale = Vector3.one * 0.22f;
 
-        go.AddComponent<MeshFilter>().sharedMesh = GetSphere();
-        MeshRenderer mr = go.AddComponent<MeshRenderer>();
-        SetupRenderer(mr);
-        SetColor(mr, color);
+        // Bola air pixel (Blue Sprinkler menyemprotkan air)
+        Color water = Color.Lerp(color, PixelVfx.WaterBlue, 0.5f);
+        PixelBillboard.Attach(go, PixelArt.Orb(water), 1.2f);
 
-        go.AddComponent<VfxProjectile>().Init(target, damage);
+        go.AddComponent<VfxProjectile>().Init(target, damage, water);
     }
 
     /// <summary>
@@ -103,14 +106,11 @@ public static class TowerVfx
     {
         GameObject go = new GameObject("Vfx_Lob");
         go.transform.position = from;
-        go.transform.localScale = Vector3.one * size;
 
-        go.AddComponent<MeshFilter>().sharedMesh = GetSphere();
-        MeshRenderer mr = go.AddComponent<MeshRenderer>();
-        SetupRenderer(mr);
-        SetColor(mr, color);
+        // Bola api / batu panas pixel
+        PixelBillboard.Attach(go, PixelArt.Orb(color), 1.3f);
 
-        go.AddComponent<VfxLob>().Init(from, to, flightTime, onLand);
+        go.AddComponent<VfxLob>().Init(from, to, flightTime, onLand, color);
     }
 
     public static void SetColor(Renderer renderer, Color color)
@@ -201,7 +201,7 @@ public class VfxPulse : MonoBehaviour
         transform.localScale = new Vector3(s, 1f, s);
 
         Color c = color;
-        c.a = Mathf.Lerp(0.6f, 0f, t);
+        c.a = Mathf.Lerp(0.9f, 0f, t);
         TowerVfx.SetColor(meshRenderer, c);
     }
 }
@@ -215,13 +215,16 @@ public class VfxLob : MonoBehaviour
     private float elapsed;
     private float arcHeight;
     private System.Action onLand;
+    private Color color;
+    private float trailTimer;
 
-    public void Init(Vector3 start, Vector3 end, float flightTime, System.Action landed)
+    public void Init(Vector3 start, Vector3 end, float flightTime, System.Action landed, Color trailColor)
     {
         from = start;
         to = end;
         duration = Mathf.Max(0.1f, flightTime);
         onLand = landed;
+        color = trailColor;
         arcHeight = 1f + Vector3.Distance(start, end) * 0.35f;
     }
 
@@ -234,8 +237,18 @@ public class VfxLob : MonoBehaviour
         pos.y += Mathf.Sin(t * Mathf.PI) * arcHeight;
         transform.position = pos;
 
+        // Jejak bara di belakang bola api
+        trailTimer -= Time.deltaTime;
+        if (trailTimer <= 0f)
+        {
+            trailTimer = 0.04f;
+            Color ember = Random.value < 0.5f ? color : new Color(1f, 0.85f, 0.35f);
+            PixelBillboard.Spawn(pos, PixelArt.Square(2), 1f, ember, 0.35f, new Vector3(0f, 0.3f, 0f));
+        }
+
         if (t >= 1f)
         {
+            PixelVfx.Burst(to + Vector3.up * 0.2f, PixelArt.BurstStyle.Fire, color, 1.1f);
             onLand?.Invoke();
             Destroy(gameObject);
         }
@@ -251,11 +264,14 @@ public class VfxProjectile : MonoBehaviour
     private Enemy target;
     private float damage;
     private float lifetime;
+    private Color color;
+    private float trailTimer;
 
-    public void Init(Enemy enemyTarget, float hitDamage)
+    public void Init(Enemy enemyTarget, float hitDamage, Color waterColor)
     {
         target = enemyTarget;
         damage = hitDamage;
+        color = waterColor;
     }
 
     private void Update()
@@ -267,12 +283,22 @@ public class VfxProjectile : MonoBehaviour
             return;
         }
 
-        Vector3 destination = target.transform.position;
+        Vector3 destination = target.transform.position + Vector3.up * (target.VisualHeight * 0.5f);
         transform.position = Vector3.MoveTowards(transform.position, destination, Speed * Time.deltaTime);
+
+        // Jejak tetesan air
+        trailTimer -= Time.deltaTime;
+        if (trailTimer <= 0f)
+        {
+            trailTimer = 0.035f;
+            PixelBillboard.Spawn(transform.position, PixelArt.Square(2), 1f, Color.Lerp(color, Color.white, 0.4f), 0.25f, Vector3.zero, 2f);
+        }
 
         if ((transform.position - destination).sqrMagnitude < 0.04f)
         {
             target.TakeDamage(damage);
+            PixelVfx.Burst(destination, PixelArt.BurstStyle.Water, color, 0.7f); // cipratan
+            PixelVfx.Debris(destination, color, 4, 1f);
             Destroy(gameObject);
         }
     }

@@ -9,7 +9,7 @@ using UnityEngine.UI;
 /// </summary>
 public class TowerInfoPanel : MonoBehaviour
 {
-    private const float ValueFontSize = 26f;
+    private const float ValueFontSize = 20f;
 
     private GridManager grid;
     private RectTransform panel;
@@ -139,7 +139,7 @@ public class TowerInfoPanel : MonoBehaviour
         if (x + width > half.x - 10f) x = local.x - 80f - width;
 
         float h = panel.sizeDelta.y;
-        float y = Mathf.Clamp(local.y + 40f, -half.y + h / 2f + 330f, half.y - h / 2f - 170f);
+        float y = Mathf.Clamp(local.y + 40f, -half.y + h / 2f + 290f, half.y - h / 2f - 130f);
 
         panel.anchoredPosition = new Vector2(x, y);
     }

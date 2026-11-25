@@ -243,6 +243,7 @@ public class Enemy : MonoBehaviour
         if (towerCount == 0 && grassCount == 0) return false;
 
         Vector3 launch = transform.position + Vector3.up * (VisualHeight * 0.6f);
+        if (towerCount > 0) FaceTowards(towerBuffer[0].transform.position);
 
         for (int i = 0; i < towerCount; i++)
         {
@@ -344,6 +345,15 @@ public class Enemy : MonoBehaviour
         ApplyTint();
     }
 
+    /// <summary>Balik sprite menghadap ke kiri / kanan (arah jalan atau target serangan).</summary>
+    private void FaceTowards(Vector3 worldTarget)
+    {
+        if (billboard == null || data == null) return;
+        float dx = worldTarget.x - transform.position.x;
+        if (Mathf.Abs(dx) < 0.05f) return; // jalan lurus maju/mundur: pertahankan arah terakhir
+        billboard.SetFacing(dx > 0f, data.spriteFacesRight);
+    }
+
     private void ApplyTint()
     {
         if (billboard == null) return;
@@ -379,6 +389,7 @@ public class Enemy : MonoBehaviour
     {
         Vector3 cellPos = targetCell.transform.position;
         Vector3 destination = new Vector3(cellPos.x, targetCell.SurfaceY + heightOffset, cellPos.z);
+        FaceTowards(destination);
         transform.position = Vector3.MoveTowards(
             transform.position,
             destination,
@@ -432,6 +443,7 @@ public class Enemy : MonoBehaviour
         if (currentHP <= 0f)
         {
             Debug.Log($"{gameObject.name} mati!");
+            PixelVfx.Burst(transform.position + Vector3.up * (VisualHeight * 0.5f), PixelArt.BurstStyle.Smoke, Color.gray, 1.2f);
             Destroy(gameObject);
         }
     }

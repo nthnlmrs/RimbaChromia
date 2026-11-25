@@ -188,7 +188,11 @@ public class GridManager : MonoBehaviour
         // Kursor di atas UI (kartu tower, tombol, panel) -> jangan tembus ke grid
         bool overUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
         GridCell cellUnderCursor = (paused || overUI) ? null : GetCellUnderCursor();
-        UpdateHover(cellUnderCursor);
+
+        // Hover biasa (tidak sedang menaruh / drag) pakai tile di TANAH, supaya area tower
+        // hanya muncul saat kursor tepat di tile-nya, bukan saat lewat di atas badan sprite-nya.
+        bool targeting = IsPlacing || dragSource != null;
+        UpdateHover(targeting || paused || overUI ? cellUnderCursor : lastGroundCell);
 
         if (paused)
         {
@@ -371,8 +375,19 @@ public class GridManager : MonoBehaviour
         return true;
     }
 
+    private GridCell lastGroundCell;
+
+    /// <summary>
+    /// Tile yang ditunjuk kursor untuk AKSI (klik, pasang, merge). Sprite tower yang tinggi bisa menutupi
+    /// tile di belakangnya, jadi aturannya:
+    ///  - Sedang menaruh tower: tile di tanah, KECUALI kursor di badan tower yang bisa di-merge dengan kartu ini.
+    ///  - Sedang drag-merge   : tile di tanah, KECUALI kursor di badan tower yang bisa jadi tujuan merge.
+    ///  - Selain itu (klik)   : badan tower diutamakan (klik sprite = pilih / mulai drag tower itu).
+    /// </summary>
     public GridCell GetCellUnderCursor()
     {
+        lastGroundCell = null;
+
         if (Mouse.current == null)
         {
             return null;
@@ -401,23 +416,38 @@ public class GridManager : MonoBehaviour
 
         System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
 
+        GridCell ground = null;
+        Tower towerHit = null;
         foreach (RaycastHit hit in hits)
         {
-            GridCell cell = hit.collider.GetComponentInParent<GridCell>();
-            if (cell != null)
+            if (ground == null)
             {
-                return cell;
+                GridCell cell = hit.collider.GetComponentInParent<GridCell>();
+                if (cell != null) ground = cell;
             }
 
-            // Kursor di badan tower -> anggap memilih tile tempat tower berdiri (penting untuk merge)
-            Tower tower = hit.collider.GetComponentInParent<Tower>();
-            if (tower != null && tower.OccupiedCell != null)
+            if (towerHit == null)
             {
-                return tower.OccupiedCell;
+                Tower tower = hit.collider.GetComponentInParent<Tower>();
+                if (tower != null && tower.OccupiedCell != null) towerHit = tower;
             }
         }
 
-        return null;
+        lastGroundCell = ground;
+        if (towerHit == null) return ground;
+
+        if (IsPlacing)
+        {
+            return towerHit.CanMergeWith(selectedTowerData) ? towerHit.OccupiedCell : ground;
+        }
+
+        if (dragSource != null)
+        {
+            bool mergeTarget = towerHit != dragSource && towerHit.CanMergeWith(dragSource.Data);
+            return mergeTarget ? towerHit.OccupiedCell : ground;
+        }
+
+        return towerHit.OccupiedCell;
     }
 
     private void UpdateHover(GridCell cellUnderCursor)

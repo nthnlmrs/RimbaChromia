@@ -110,23 +110,25 @@ public class FireSpark : MonoBehaviour
     private float life;
     private float age;
     private float wobble;
-    private MeshRenderer meshRenderer;
+    private SpriteRenderer spriteRenderer;
     private Color color;
 
     public static void Spawn(Vector3 tileCenter, int level)
     {
         GameObject go = new GameObject("Fire Spark");
         go.transform.position = tileCenter + new Vector3(Random.Range(-0.35f, 0.35f), 0.15f, Random.Range(-0.35f, 0.35f));
-        go.transform.localScale = Vector3.one * Random.Range(0.035f, 0.06f);
+        go.transform.localScale = Vector3.one * (Random.value < 0.5f ? 1f : 1.5f);
 
-        go.AddComponent<MeshFilter>().sharedMesh = TowerVfx.SphereMesh;
-        MeshRenderer mr = go.AddComponent<MeshRenderer>();
-        mr.sharedMaterial = TowerVfx.UnlitMaterial;
-        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        mr.receiveShadows = false;
+        // Kotak pixel (bukan bola) supaya senada dengan pixel art
+        SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = PixelArt.Square(2);
+        sr.sharedMaterial = SpriteMaterials.DefaultSprite;
+        sr.sortingOrder = 15;
+        sr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        go.AddComponent<FaceCamera>();
 
         FireSpark spark = go.AddComponent<FireSpark>();
-        spark.meshRenderer = mr;
+        spark.spriteRenderer = sr;
         spark.color = Colors[Random.Range(0, Colors.Length)];
         spark.velocity = new Vector3(0f, Random.Range(0.6f, 1.0f) + level * 0.15f, 0f);
         spark.life = Random.Range(0.6f, 1.1f);
@@ -147,6 +149,6 @@ public class FireSpark : MonoBehaviour
 
         Color c = color;
         c.a = 1f - age / life;
-        TowerVfx.SetColor(meshRenderer, c);
+        spriteRenderer.color = c;
     }
 }

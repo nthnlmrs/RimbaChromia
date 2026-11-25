@@ -50,7 +50,7 @@ public class TowerCardBar : MonoBehaviour
 
         // Panel deskripsi tower (belum dipasang) di kiri, di atas deretan kartu
         descriptionPanel = UIKit.ArtImage("Tower Description", hudRoot, null);
-        UIKit.Place(descriptionPanel.rectTransform, Vector2.zero, Vector2.zero, new Vector2(36f, 16f + cardSize.y + 24f), Vector2.zero);
+        UIKit.Place(descriptionPanel.rectTransform, Vector2.zero, Vector2.zero, new Vector2(36f, 16f + cardSize.y + 60f), Vector2.zero);
         descriptionPanel.gameObject.SetActive(false);
     }
 
@@ -84,7 +84,7 @@ public class TowerCardBar : MonoBehaviour
 public class TowerCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler,
     IPointerEnterHandler, IPointerExitHandler
 {
-    private const float RaiseHeight = 70f;
+    private const float RaiseHeight = 50f;
 
     private GridManager grid;
     private TowerData data;
@@ -122,8 +122,8 @@ public class TowerCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler,
         UIKit.Stretch(visual);
 
         // Angka hotkey kecil di pojok (kontrol keyboard 1-6)
-        TextMeshProUGUI key = UIKit.ArtLabel("Hotkey", visual, hotkey.ToString(), 22f, TextAlignmentOptions.TopLeft);
-        UIKit.Place(key.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(12f, -6f), new Vector2(40f, 30f));
+        TextMeshProUGUI key = UIKit.ArtLabel("Hotkey", visual, hotkey.ToString(), 18f, TextAlignmentOptions.TopLeft);
+        UIKit.Place(key.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(9f, -4f), new Vector2(32f, 24f));
     }
 
     private void Update()

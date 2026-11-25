@@ -49,23 +49,23 @@ public class TutorialGuide : MonoBehaviour
         grid = gridManager;
 
         RectTransform root = (RectTransform)transform;
-        UIKit.Place(root, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 400f), new Vector2(1000f, 112f));
+        UIKit.Place(root, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 300f), new Vector2(1180f, 156f));
         Image bg = root.gameObject.AddComponent<Image>();
         bg.color = UIKit.PanelColor;
         bg.raycastTarget = false;
         panel = root.gameObject;
 
         Image accent = UIKit.Panel("Accent", root, UIKit.Good, false);
-        UIKit.Place(accent.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), Vector2.zero, new Vector2(6f, 112f));
+        UIKit.Place(accent.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), Vector2.zero, new Vector2(8f, 156f));
 
-        TextMeshProUGUI name = UIKit.Label("Speaker", root, "Taduh", 22f, TextAlignmentOptions.TopLeft, UIKit.Good, true);
-        UIKit.Place(name.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(22f, -10f), new Vector2(300f, 28f));
+        TextMeshProUGUI name = UIKit.Label("Speaker", root, "Taduh", 32f, TextAlignmentOptions.TopLeft, UIKit.Good, true);
+        UIKit.Place(name.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -12f), new Vector2(300f, 38f));
 
-        progress = UIKit.Label("Progress", root, "", 18f, TextAlignmentOptions.TopRight, UIKit.TextMuted);
-        UIKit.Place(progress.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-18f, -12f), new Vector2(240f, 26f));
+        progress = UIKit.Label("Progress", root, "", 24f, TextAlignmentOptions.TopRight, UIKit.TextMuted);
+        UIKit.Place(progress.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-24f, -14f), new Vector2(260f, 32f));
 
-        body = UIKit.Label("Text", root, "", 22f, TextAlignmentOptions.TopLeft, UIKit.TextColor);
-        UIKit.Place(body.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(22f, -42f), new Vector2(950f, 64f));
+        body = UIKit.Label("Text", root, "", 30f, TextAlignmentOptions.TopLeft, UIKit.TextColor);
+        UIKit.Place(body.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -54f), new Vector2(1124f, 96f));
         body.textWrappingMode = TextWrappingModes.Normal;
         body.richText = true;
 
