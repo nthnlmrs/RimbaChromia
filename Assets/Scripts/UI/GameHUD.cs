@@ -40,6 +40,9 @@ public class GameHUD : MonoBehaviour
     private TextMeshProUGUI announceText;
     private float announceTimer;
 
+    private TextMeshProUGUI toastText;
+    private float toastTimer;
+
     private GameObject pauseOverlay;
     private VolumeRow soundRow;
     private VolumeRow musicRow;
@@ -80,6 +83,26 @@ public class GameHUD : MonoBehaviour
         {
             waves.OnWaveStarted -= HandleWaveStarted;
         }
+        if (grid != null)
+        {
+            grid.OnActionRejected -= ShowToast;
+        }
+    }
+
+    private void ShowToast(string message)
+    {
+        toastText.text = message;
+        toastText.alpha = 1f;
+        toastText.gameObject.SetActive(true);
+        toastTimer = 1.8f;
+    }
+
+    private void RefreshToast()
+    {
+        if (toastTimer <= 0f) return;
+        toastTimer -= Time.unscaledDeltaTime;
+        toastText.alpha = Mathf.Clamp01(toastTimer / 0.5f);
+        if (toastTimer <= 0f) toastText.gameObject.SetActive(false);
     }
 
     // ------------------------------------------------------------------
@@ -104,6 +127,12 @@ public class GameHUD : MonoBehaviour
         announceText = UIKit.ArtLabel("Wave Announce", root, "", 96f);
         UIKit.Place(announceText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 120f), new Vector2(1200f, 220f));
         announceText.gameObject.SetActive(false);
+
+        // Pesan singkat (misal merge ditolak)
+        toastText = UIKit.ArtLabel("Toast", root, "", 30f, TextAlignmentOptions.Center, new Color(1f, 0.78f, 0.62f));
+        UIKit.Place(toastText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -190f), new Vector2(1000f, 44f));
+        toastText.gameObject.SetActive(false);
+        if (grid != null) grid.OnActionRejected += ShowToast;
 
         if (grid != null)
         {
@@ -359,6 +388,7 @@ public class GameHUD : MonoBehaviour
         RefreshTopBar();
         RefreshCountdown();
         RefreshAnnouncement();
+        RefreshToast();
         RefreshResult();
 
         if (isPaused)

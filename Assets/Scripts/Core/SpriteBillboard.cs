@@ -135,6 +135,24 @@ public class SpriteBillboard : MonoBehaviour
         if (spriteRenderer.flipX) local.x = -local.x;
         Vector2 p = new Vector2(local.x, local.y);
 
+        // Paling akurat: cek transparansi pixel aslinya (butuh Read/Write aktif di import setting sprite).
+        // Celah transparan di dalam bentuk sprite (misal spiral Green Sprout) tidak ikut menangkap kursor.
+        Texture2D texture = sprite.texture;
+        if (texture != null && texture.isReadable)
+        {
+            Rect rect = sprite.textureRect;
+            float px = p.x * sprite.pixelsPerUnit + sprite.pivot.x;
+            float py = p.y * sprite.pixelsPerUnit + sprite.pivot.y;
+            if (px < 0f || py < 0f || px >= rect.width || py >= rect.height) return false;
+
+            Color pixel = texture.GetPixel(Mathf.FloorToInt(rect.x + px), Mathf.FloorToInt(rect.y + py));
+            if (pixel.a < 0.5f) return false;
+
+            distance = enter;
+            return true;
+        }
+
+        // Cadangan (tekstur tidak bisa dibaca): pakai mesh "Tight" sprite
         Vector2[] v = sprite.vertices;
         ushort[] tri = sprite.triangles;
         for (int i = 0; i + 2 < tri.Length; i += 3)

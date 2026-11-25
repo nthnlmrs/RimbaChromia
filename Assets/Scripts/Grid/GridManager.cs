@@ -64,6 +64,19 @@ public class GridManager : MonoBehaviour
 
     /// <summary>Frame terakhir Esc/klik kanan dipakai untuk membatalkan sesuatu (supaya Esc tidak sekaligus membuka pause).</summary>
     public int LastCancelFrame { get; private set; } = -1;
+
+    /// <summary>Pesan untuk pemain saat merge / pemasangan ditolak (ditampilkan GameHUD).</summary>
+    public event Action<string> OnActionRejected;
+
+    /// <summary>Alasan merge ditolak, dalam bahasa pemain. Null kalau bukan kasus merge.</summary>
+    private static string MergeRejectReason(Tower target, TowerData incoming)
+    {
+        if (target == null || target.Data == null || incoming == null) return null;
+        if (target.Data.color != incoming.color) return "Merge needs two towers of the same type";
+        if (target.Data.tier != incoming.tier) return "Merge needs two towers of the same level";
+        if (target.Data.nextTier == null) return "This tower is already at max level";
+        return null;
+    }
     public float TowerHeightOffset => towerHeightOffset;
 
     public bool CanAfford(TowerData towerData)
@@ -312,6 +325,8 @@ public class GridManager : MonoBehaviour
         else
         {
             Debug.Log("Drag-merge gagal: harus tower yang sama persis (warna & tier) dan belum tier 3.");
+            string reason = MergeRejectReason(target, source.Data);
+            if (reason != null) OnActionRejected?.Invoke(reason);
         }
     }
 
@@ -427,35 +442,91 @@ public class GridManager : MonoBehaviour
             }
         }
 
-        // Tower dipilih per PIXEL sprite (area transparan di sekitar sprite tidak menghalangi),
-        // dan kalau beberapa tower bertumpuk, yang paling depan (paling dekat kamera) yang menang.
+        // Tower dipilih per PIXEL sprite (area transparan di sekitar sprite tidak menghalangi).
+        //  - towerHit     : tower paling depan di bawah kursor (untuk klik biasa)
+        //  - mergeTarget  : tower yang BISA di-merge di sepanjang garis kursor, walau tertutup tower lain
+        //                   di depannya (misal Red di belakang Green Sprout yang tinggi)
+        TowerData mergeData = IsPlacing ? selectedTowerData : dragSource != null ? dragSource.Data : null;
         Tower towerHit = null;
+        Tower mergeTarget = null;
         float nearest = float.MaxValue;
+        float nearestMerge = float.MaxValue;
         foreach (Tower tower in Tower.ActiveTowers)
         {
             if (tower == null || tower.OccupiedCell == null) continue;
-            if (tower.RaycastSprite(ray, out float distance) && distance < nearest)
+            if (!tower.RaycastSprite(ray, out float distance)) continue;
+
+            if (distance < nearest)
             {
                 nearest = distance;
                 towerHit = tower;
             }
+
+            bool canMerge = mergeData != null && tower != dragSource && tower.CanMergeWith(mergeData);
+            if (canMerge && distance < nearestMerge)
+            {
+                nearestMerge = distance;
+                mergeTarget = tower;
+            }
         }
 
+        // Tile tanah di bawah kursor yang berisi pasangan merge juga dihitung
+        if (mergeTarget == null && mergeData != null && ground != null)
+        {
+            Tower onGround = ground.OccupyingTower;
+            if (onGround != null && onGround != dragSource && onGround.CanMergeWith(mergeData)) mergeTarget = onGround;
+        }
+
+        // Cadangan saat tower bertumpuk: pasangan merge yang badannya paling dekat ke kursor di layar
+        if (mergeTarget == null && mergeData != null)
+        {
+            mergeTarget = NearestMergeTargetOnScreen(mergeData, mousePosition);
+        }
+
+        if (mergeData != null)
+        {
+            lastGroundCell = ground;
+            return mergeTarget != null ? mergeTarget.OccupiedCell : ground;
+        }
+
+        // Klik biasa: tower paling depan di bawah kursor, kalau tidak ada pakai tile tanah
         lastGroundCell = ground;
-        if (towerHit == null) return ground;
+        return towerHit != null ? towerHit.OccupiedCell : ground;
+    }
 
-        if (IsPlacing)
+    /// <summary>
+    /// Tower pasangan merge yang garis badannya (kaki sampai puncak) paling dekat ke kursor di layar,
+    /// dalam radius kecil. Membantu saat tower tertutup beberapa tower lain di depannya.
+    /// </summary>
+    private Tower NearestMergeTargetOnScreen(TowerData mergeData, Vector2 mouse)
+    {
+        float radius = 70f * Screen.height / 1080f;
+        float best = radius * radius;
+        Tower result = null;
+
+        foreach (Tower tower in Tower.ActiveTowers)
         {
-            return towerHit.CanMergeWith(selectedTowerData) ? towerHit.OccupiedCell : ground;
-        }
+            if (tower == null || tower == dragSource || tower.OccupiedCell == null || !tower.CanMergeWith(mergeData)) continue;
 
-        if (dragSource != null)
-        {
-            bool mergeTarget = towerHit != dragSource && towerHit.CanMergeWith(dragSource.Data);
-            return mergeTarget ? towerHit.OccupiedCell : ground;
-        }
+            Vector3 foot = mainCamera.WorldToScreenPoint(tower.transform.position);
+            Vector3 top = mainCamera.WorldToScreenPoint(tower.MuzzlePosition);
+            if (foot.z <= 0f || top.z <= 0f) continue;
 
-        return towerHit.OccupiedCell;
+            float d = DistanceToSegmentSqr(mouse, foot, top);
+            if (d < best)
+            {
+                best = d;
+                result = tower;
+            }
+        }
+        return result;
+    }
+
+    private static float DistanceToSegmentSqr(Vector2 p, Vector2 a, Vector2 b)
+    {
+        Vector2 ab = b - a;
+        float t = ab.sqrMagnitude > 0.0001f ? Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab.sqrMagnitude) : 0f;
+        return (a + ab * t - p).sqrMagnitude;
     }
 
     private void UpdateHover(GridCell cellUnderCursor)
@@ -785,6 +856,10 @@ public class GridManager : MonoBehaviour
         // Jika bukan merge, cek apakah tile valid untuk deploy baru
         if (!targetCell.CanPlaceTower(selectedTowerData))
         {
+            string reason = MergeRejectReason(targetCell.OccupyingTower, selectedTowerData);
+            if (reason == null && !targetCell.IsOccupied && targetCell.Type == TileType.BarePath) reason = "Only Red and Orange towers can be placed on the path";
+            if (reason != null) OnActionRejected?.Invoke(reason);
+
             Debug.LogWarning(
                 $"Tidak bisa pasang {selectedTowerData.towerName} di Cell ({targetCell.Row}, {targetCell.Column}) " +
                 $"[{targetCell.Type}] (Occupied: {targetCell.IsOccupied})."
