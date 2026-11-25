@@ -310,6 +310,8 @@ public class PlacementPreview : MonoBehaviour
             ? new Color(1f, 1f, 1f, ghostAlpha + 0.15f)
             : new Color(1f, 0.35f, 0.35f, ghostAlpha + 0.15f));
 
+        ghostSprite.SetScale(Tower.DisplayScaleFor(data), instant: true); // sama dengan ukuran tower hasilnya
+
         Vector3 cellPos = cell.transform.position;
         ghost.transform.position = new Vector3(cellPos.x, cell.SurfaceY, cellPos.z);
 

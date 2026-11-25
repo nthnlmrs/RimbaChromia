@@ -44,7 +44,7 @@ public class HealthBarLayer : MonoBehaviour
 
             // Titik sedikit ke arah kamera dari tile = tampil di bawah kaki tower pada layar
             Vector3 cellPos = tower.OccupiedCell.transform.position;
-            Vector3 world = new Vector3(cellPos.x, tower.OccupiedCell.SurfaceY, cellPos.z - 0.5f);
+            Vector3 world = new Vector3(cellPos.x, tower.OccupiedCell.SurfaceY, cellPos.z - 0.62f);
             float ratio = tower.CurrentHP / tower.MaxHP;
             Color color = tower.IsImmune ? UIKit.Accent : Color.Lerp(UIKit.Danger, UIKit.Good, ratio);
             UpdateBar(tower, world, ratio, color, TowerBarSize, true, frame);

@@ -154,7 +154,7 @@ public class TowerInfoPanel : MonoBehaviour
                 break;
 
             case TowerRole.Trap:
-                yield return $"Meledak saat diinjak: {d.attackDamage:0} dmg area {AreaName(d.trapDamageArea)}, jeda {d.actionCooldown:0.#} dtk";
+                yield return $"SEKALI PAKAI: meledak saat diinjak, {d.attackDamage:0} dmg area {AreaName(d.trapDamageArea)}";
                 if (d.slowPercent > 0f) yield return $"Memperlambat musuh {d.slowPercent * 100f:0}% selama {d.slowDuration:0.#} dtk";
                 break;
 

@@ -14,6 +14,14 @@ using UnityEngine;
 /// </summary>
 public class Tower : MonoBehaviour
 {
+    /// <summary>Skala dasar sprite tower (dibanding musuh). Tower dibuat lebih besar supaya terlihat megah.</summary>
+    public const float SpriteScale = 1.25f;
+
+    /// <summary>Tier lebih tinggi = lebih besar: T1 1.0x, T2 1.2x, T3 1.4x.</summary>
+    public static float TierScale(int tier) => 1f + 0.2f * (Mathf.Clamp(tier, 1, 3) - 1);
+
+    public static float DisplayScaleFor(TowerData towerData) => SpriteScale * TierScale(towerData != null ? towerData.tier : 1);
+
     /// <summary>Semua tower yang sedang terpasang (dipakai health bar UI).</summary>
     public static readonly List<Tower> ActiveTowers = new List<Tower>();
 
@@ -163,11 +171,7 @@ public class Tower : MonoBehaviour
 
     private void HandleTrap(float dt)
     {
-        if (!TickReady(dt))
-        {
-            return;
-        }
-
+        // Sekali pakai -> tidak perlu jeda, langsung siap meledak begitu dipasang.
         // Trap baru meledak kalau ada musuh yang benar-benar menginjak tile-nya
         bool stepped = false;
         foreach (Enemy enemy in Enemy.ActiveEnemies)
@@ -197,6 +201,10 @@ public class Tower : MonoBehaviour
         }
 
         TowerVfx.Pulse(occupiedCell.transform.position, AreaSize(data.trapDamageArea), TowerVfx.ColorOf(data.color), 0.4f);
+
+        // Trap SEKALI PAKAI: setelah meledak langsung habis (tier lebih tinggi = ledakan lebih besar)
+        Debug.Log($"{data.towerName} meledak ({Damage:0} dmg ke {enemyBuffer.Count} musuh) dan habis terpakai.");
+        Die();
     }
 
     // ------------------------------------------------------------------
@@ -485,6 +493,7 @@ public class Tower : MonoBehaviour
         }
 
         actionTimer = 0f;
+        if (billboard != null) billboard.SetScale(DisplayScaleFor(data), pop: true); // tumbuh + efek pop
         TowerVfx.Pulse(transform.position, cellSize * 1.6f, TowerVfx.ColorOf(data.color), 0.5f);
         Debug.Log($"Merge berhasil! Naik ke {data.towerName} (Tier {data.tier}), HP penuh: {currentHP}/{MaxHP}.");
     }
@@ -542,14 +551,12 @@ public class Tower : MonoBehaviour
         Vector3 cellPos = occupiedCell.transform.position;
         transform.position = new Vector3(cellPos.x, occupiedCell.SurfaceY, cellPos.z);
 
-        // Collider untuk klik badan tower: setinggi sprite, alas di tanah
+        // Kapsul tegak bawaan prefab tidak cocok dengan sprite yang condong mengikuti kamera:
+        // bagian atas sprite jadi tidak bisa diklik (drag-merge gagal). Klik ditangani collider sprite.
         CapsuleCollider capsule = GetComponent<CapsuleCollider>();
         if (capsule != null)
         {
-            capsule.direction = 1;
-            capsule.radius = 0.4f * cellSize;
-            capsule.height = 1.4f * cellSize;
-            capsule.center = new Vector3(0f, 0.7f * cellSize, 0f);
+            capsule.enabled = false;
         }
     }
 
@@ -582,8 +589,19 @@ public class Tower : MonoBehaviour
             ? data.towerSprite
             : SpriteBillboard.Placeholder(GetColorFromTowerColor(data.color), 40, 60);
 
-        if (billboard == null) billboard = SpriteBillboard.Create(transform, sprite, true, SpriteBillboard.TowerGroundOffset, 0.85f);
-        else billboard.SetSprite(sprite);
+        bool firstTime = billboard == null;
+        if (firstTime)
+        {
+            billboard = SpriteBillboard.Create(transform, sprite, true, SpriteBillboard.TowerGroundOffset, 0.85f);
+            billboard.EnableClickCollider();
+        }
+        else
+        {
+            billboard.SetSprite(sprite);
+        }
+
+        // Tower lebih besar dari musuh, dan makin besar tiap naik tier
+        billboard.SetScale(DisplayScaleFor(data), instant: firstTime);
 
         // Kebal (Red setelah merge): sprite berpendar keemasan & sedikit transparan
         billboard.SetColor(IsImmune ? new Color(1f, 0.85f, 0.45f, 1f) : Color.white);

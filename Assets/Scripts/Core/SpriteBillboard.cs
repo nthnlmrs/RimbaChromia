@@ -22,6 +22,15 @@ public class SpriteBillboard : MonoBehaviour
     private Color tint = Color.white;
     private bool translucent;
 
+    // Skala (uniform) dengan transisi halus + efek "pop" saat merge
+    private float targetScale = 1f;
+    private float displayScale = 1f;
+    private float popTimer;
+    private float shadowSize = 0.9f;
+    private BoxCollider clickCollider;
+
+    private const float PopDuration = 0.35f;
+
     private static readonly int BaseMapId = Shader.PropertyToID("_BaseMap");
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
@@ -44,8 +53,11 @@ public class SpriteBillboard : MonoBehaviour
     /// <summary>Bayangan bulat lembut di kaki.</summary>
     public static bool UseContactShadow = true;
 
-    /// <summary>Geser sprite tower dari titik berdiri (zero = berdiri tepat di permukaan tile). Y negatif = ditanam ke tile.</summary>
-    public static readonly Vector3 TowerGroundOffset = Vector3.zero;
+    /// <summary>
+    /// Geser sprite tower dari tengah tile. Z negatif = maju ke arah kamera (lebih dekat ke pemain).
+    /// Y negatif = ditanam ke tile.
+    /// </summary>
+    public static readonly Vector3 TowerGroundOffset = new Vector3(0f, 0f, -0.2f);
 
     /// <summary>Geser sprite musuh dari titik berdiri (zero = berdiri tepat di permukaan tile).</summary>
     public static readonly Vector3 EnemyGroundOffset = Vector3.zero;
@@ -68,6 +80,7 @@ public class SpriteBillboard : MonoBehaviour
         billboard.spriteRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         billboard.spriteRenderer.receiveShadows = false;
         billboard.translucent = !grounded;
+        billboard.shadowSize = shadowSize;
 
         if (grounded && CastSilhouetteShadow)
         {
@@ -90,7 +103,7 @@ public class SpriteBillboard : MonoBehaviour
             // Bayangan kontak lembut di kaki
             GameObject c = new GameObject("Contact Shadow");
             c.transform.SetParent(parent, false);
-            c.transform.localPosition = new Vector3(0f, 0.012f, 0f);
+            c.transform.localPosition = new Vector3(groundOffset.x, 0.012f, groundOffset.z); // ikut posisi kaki sprite
             c.transform.localScale = new Vector3(shadowSize, 1f, shadowSize * 0.55f);
             c.AddComponent<MeshFilter>().sharedMesh = TowerVfx.FlatQuad;
             MeshRenderer mr = c.AddComponent<MeshRenderer>();
@@ -110,6 +123,50 @@ public class SpriteBillboard : MonoBehaviour
         spriteRenderer.sprite = sprite;
         if (shadowCaster != null) shadowCaster.sprite = sprite;
         ApplyLook();
+        FitClickCollider();
+    }
+
+    /// <summary>
+    /// Skala sprite (selalu seragam, jadi pixel art tidak gepeng).
+    /// instant = langsung (preview); pop = efek membesar sesaat (merge naik tier).
+    /// </summary>
+    public void SetScale(float scale, bool instant = false, bool pop = false)
+    {
+        targetScale = Mathf.Max(0.1f, scale);
+        if (instant) displayScale = targetScale;
+        if (pop) popTimer = PopDuration;
+        ApplyScale();
+    }
+
+    /// <summary>
+    /// Collider klik yang mengikuti bentuk & kemiringan sprite (bukan kapsul tegak),
+    /// supaya bagian atas sprite yang condong ke belakang tetap bisa diklik / di-drag.
+    /// </summary>
+    public void EnableClickCollider()
+    {
+        if (clickCollider == null) clickCollider = gameObject.AddComponent<BoxCollider>();
+        FitClickCollider();
+    }
+
+    private void FitClickCollider()
+    {
+        if (clickCollider == null || spriteRenderer.sprite == null) return;
+
+        Bounds b = spriteRenderer.sprite.bounds; // ruang lokal sprite (sudah termasuk pivot di kaki)
+        clickCollider.center = new Vector3(b.center.x, b.center.y, 0f);
+        clickCollider.size = new Vector3(b.size.x * 0.8f, b.size.y, 0.1f);
+    }
+
+    private void ApplyScale()
+    {
+        float pop = popTimer > 0f ? Mathf.Sin((1f - popTimer / PopDuration) * Mathf.PI) * 0.18f : 0f;
+        float s = displayScale * (1f + pop);
+        transform.localScale = new Vector3(s, s, s);
+
+        if (contactShadow != null)
+        {
+            contactShadow.localScale = new Vector3(shadowSize * displayScale, 1f, shadowSize * 0.55f * displayScale);
+        }
     }
 
     /// <summary>Tint warna (kebal, diperlambat, preview). Alpha &lt; 1 otomatis memakai mode transparan.</summary>
@@ -154,6 +211,14 @@ public class SpriteBillboard : MonoBehaviour
     private void LateUpdate()
     {
         FaceCamera();
+
+        float dt = Time.deltaTime;
+        if (popTimer > 0f) popTimer = Mathf.Max(0f, popTimer - dt);
+        if (!Mathf.Approximately(displayScale, targetScale) || popTimer > 0f)
+        {
+            displayScale = Mathf.MoveTowards(displayScale, targetScale, dt * 2.5f);
+            ApplyScale();
+        }
     }
 
     private void FaceCamera()
