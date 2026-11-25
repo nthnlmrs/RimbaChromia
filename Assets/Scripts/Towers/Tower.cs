@@ -582,7 +582,7 @@ public class Tower : MonoBehaviour
             ? data.towerSprite
             : SpriteBillboard.Placeholder(GetColorFromTowerColor(data.color), 40, 60);
 
-        if (billboard == null) billboard = SpriteBillboard.Create(transform, sprite, true, SpriteBillboard.TowerGroundOffset);
+        if (billboard == null) billboard = SpriteBillboard.Create(transform, sprite, true, SpriteBillboard.TowerGroundOffset, 0.85f);
         else billboard.SetSprite(sprite);
 
         // Kebal (Red setelah merge): sprite berpendar keemasan & sedikit transparan

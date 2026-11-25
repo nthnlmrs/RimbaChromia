@@ -42,11 +42,9 @@ public class HealthBarLayer : MonoBehaviour
         {
             if (tower == null || tower.OccupiedCell == null || tower.MaxHP <= 0f) continue;
 
-            // Titik sedikit ke arah kamera dari tile = tampil di bawah tower pada layar
-            // Sprite tower ditanam sedikit ke depan tile (SpriteBillboard.TowerGroundOffset),
-            // jadi bar diletakkan lebih ke depan lagi supaya tepat di bawah kaki, tidak menimpa sprite
+            // Titik sedikit ke arah kamera dari tile = tampil di bawah kaki tower pada layar
             Vector3 cellPos = tower.OccupiedCell.transform.position;
-            Vector3 world = new Vector3(cellPos.x, tower.OccupiedCell.SurfaceY, cellPos.z - 0.68f);
+            Vector3 world = new Vector3(cellPos.x, tower.OccupiedCell.SurfaceY, cellPos.z - 0.5f);
             float ratio = tower.CurrentHP / tower.MaxHP;
             Color color = tower.IsImmune ? UIKit.Accent : Color.Lerp(UIKit.Danger, UIKit.Good, ratio);
             UpdateBar(tower, world, ratio, color, TowerBarSize, true, frame);

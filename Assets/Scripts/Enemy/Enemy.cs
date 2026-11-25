@@ -337,7 +337,7 @@ public class Enemy : MonoBehaviour
             sprite = SpriteBillboard.Placeholder(data.placeholderColor, w, Mathf.RoundToInt(w * 1.15f));
         }
 
-        if (billboard == null) billboard = SpriteBillboard.Create(transform, sprite, true, SpriteBillboard.EnemyGroundOffset);
+        if (billboard == null) billboard = SpriteBillboard.Create(transform, sprite, true, SpriteBillboard.EnemyGroundOffset, 0.6f);
         else billboard.SetSprite(sprite);
 
         baseColor = Color.white; // sprite sudah berwarna, tint putih = warna asli

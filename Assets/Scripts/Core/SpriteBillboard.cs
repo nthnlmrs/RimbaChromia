@@ -38,17 +38,17 @@ public class SpriteBillboard : MonoBehaviour
         }
     }
 
-    /// <summary>Bayangan siluet dari cahaya matahari. Dimatikan: bayangan yang terpisah dari kaki justru memberi kesan melayang.</summary>
-    public static bool CastSilhouetteShadow = false;
+    /// <summary>Bayangan siluet dari cahaya matahari (jatuh ke tile).</summary>
+    public static bool CastSilhouetteShadow = true;
 
-    /// <summary>Bayangan bulat di kaki. Dimatikan karena alasan yang sama.</summary>
-    public static bool UseContactShadow = false;
+    /// <summary>Bayangan bulat lembut di kaki.</summary>
+    public static bool UseContactShadow = true;
 
-    /// <summary>Posisi tanam default untuk tower: sedikit ke bawah permukaan & ke depan, supaya kaki menancap di tile.</summary>
-    public static readonly Vector3 TowerGroundOffset = new Vector3(0f, -0.1f, -0.15f);
+    /// <summary>Geser sprite tower dari titik berdiri (zero = berdiri tepat di permukaan tile). Y negatif = ditanam ke tile.</summary>
+    public static readonly Vector3 TowerGroundOffset = Vector3.zero;
 
-    /// <summary>Posisi tanam default untuk musuh.</summary>
-    public static readonly Vector3 EnemyGroundOffset = new Vector3(0f, -0.05f, -0.05f);
+    /// <summary>Geser sprite musuh dari titik berdiri (zero = berdiri tepat di permukaan tile).</summary>
+    public static readonly Vector3 EnemyGroundOffset = Vector3.zero;
 
     /// <param name="grounded">true = karakter di map (cutout, menulis depth). false = bayangan preview (transparan).</param>
     /// <param name="groundOffset">
