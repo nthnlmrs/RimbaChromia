@@ -417,19 +417,27 @@ public class GridManager : MonoBehaviour
         System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
 
         GridCell ground = null;
-        Tower towerHit = null;
         foreach (RaycastHit hit in hits)
         {
-            if (ground == null)
+            GridCell cell = hit.collider.GetComponentInParent<GridCell>();
+            if (cell != null)
             {
-                GridCell cell = hit.collider.GetComponentInParent<GridCell>();
-                if (cell != null) ground = cell;
+                ground = cell;
+                break;
             }
+        }
 
-            if (towerHit == null)
+        // Tower dipilih per PIXEL sprite (area transparan di sekitar sprite tidak menghalangi),
+        // dan kalau beberapa tower bertumpuk, yang paling depan (paling dekat kamera) yang menang.
+        Tower towerHit = null;
+        float nearest = float.MaxValue;
+        foreach (Tower tower in Tower.ActiveTowers)
+        {
+            if (tower == null || tower.OccupiedCell == null) continue;
+            if (tower.RaycastSprite(ray, out float distance) && distance < nearest)
             {
-                Tower tower = hit.collider.GetComponentInParent<Tower>();
-                if (tower != null && tower.OccupiedCell != null) towerHit = tower;
+                nearest = distance;
+                towerHit = tower;
             }
         }
 

@@ -228,8 +228,7 @@ public class Tower : MonoBehaviour
             insight.AddInsight(data.insightPerTick);
 
             // Kilatan di atas kepala tower supaya tidak tertutup badan silinder placeholder
-            float top = transform.position.y + (billboard != null ? billboard.VisualHeight : 1f) + 0.05f;
-            PixelVfx.Sparkles(new Vector3(transform.position.x, top - 0.1f, transform.position.z), PixelVfx.InsightBlue, 3, 0.2f);
+            PixelVfx.Sparkles(MuzzlePosition, PixelVfx.InsightBlue, 3, 0.2f); // dari cahaya di puncak beacon
         }
     }
 
@@ -302,7 +301,7 @@ public class Tower : MonoBehaviour
 
         actionTimer = 0f;
         FaceTowards(target.transform.position);
-        TowerVfx.FireProjectile(transform.position + Vector3.up * 0.6f, target, Damage, TowerVfx.ColorOf(data.color));
+        TowerVfx.FireProjectile(MuzzlePosition, target, Damage, TowerVfx.ColorOf(data.color)); // keluar dari moncong
     }
 
     private Enemy FindTargetInRange()
@@ -353,7 +352,7 @@ public class Tower : MonoBehaviour
         }
 
         TowerVfx.Pulse(occupiedCell.transform.position, cellSize * 5f, TowerVfx.ColorOf(data.color), 0.45f);
-        PixelVfx.Burst(transform.position + Vector3.up * 0.9f, PixelArt.BurstStyle.Magic, TowerVfx.ColorOf(data.color), 1.2f);
+        PixelVfx.Burst(MuzzlePosition, PixelArt.BurstStyle.Magic, TowerVfx.ColorOf(data.color), 1.2f); // dari bola ungu
         foreach (Enemy hit in enemyBuffer)
         {
             PixelVfx.Sparkles(hit.transform.position + Vector3.up * 0.3f, TowerVfx.ColorOf(data.color), 2, 0.15f, 0.5f);
@@ -487,6 +486,18 @@ public class Tower : MonoBehaviour
         Destroy(gameObject);
     }
 
+    /// <summary>Titik keluar peluru / beam / efek di dunia (moncong, kristal, bola), ikut arah hadap & skala.</summary>
+    public Vector3 MuzzlePosition => billboard != null
+        ? billboard.PixelToWorld(data.muzzleOffset)
+        : transform.position + Vector3.up * 0.6f;
+
+    /// <summary>Kursor mengenai pixel sprite tower ini (bukan area transparan di sekitarnya).</summary>
+    public bool RaycastSprite(Ray ray, out float distance)
+    {
+        distance = 0f;
+        return billboard != null && billboard.RaycastSprite(ray, out distance);
+    }
+
     /// <summary>Balik sprite ke kiri / kanan menghadap posisi target.</summary>
     private void FaceTowards(Vector3 worldTarget)
     {
@@ -614,7 +625,6 @@ public class Tower : MonoBehaviour
         if (firstTime)
         {
             billboard = SpriteBillboard.Create(transform, sprite, true, SpriteBillboard.TowerGroundOffset, 0.85f);
-            billboard.EnableClickCollider();
         }
         else
         {
@@ -667,7 +677,7 @@ public class Tower : MonoBehaviour
             beam.endColor = new Color(1f, 1f, 1f, 0.75f);
         }
 
-        beam.SetPosition(0, transform.position + Vector3.up * 0.7f);
+        beam.SetPosition(0, MuzzlePosition); // dari kristal / puncak tower
         beam.SetPosition(1, targetPosition);
         beam.enabled = true;
         beamTimer = BeamDuration;

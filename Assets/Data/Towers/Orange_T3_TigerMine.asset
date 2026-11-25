@@ -39,6 +39,8 @@ MonoBehaviour:
   buffHP: 0
   buffArea: 3
   nextTier: {fileID: 0}
+  spriteFacesRight: 0
+  muzzleOffset: {x: 0, y: 85}
   towerSprite: {fileID: 21300000, guid: 884daad5f6bd6e54da64c5d2b2a96c16, type: 3}
   placeholderMaterial: {fileID: 0}
   placeholderScale: {x: 1, y: 0.45, z: 1}

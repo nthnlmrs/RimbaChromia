@@ -119,6 +119,58 @@ public class SpriteBillboard : MonoBehaviour
     }
 
     /// <summary>
+    /// Apakah sinar (dari kursor) mengenai pixel sprite yang TERGAMBAR (bukan area transparan di sekitarnya).
+    /// Memakai mesh "Tight" sprite yang mengikuti bentuk pixel, dan ikut dibalik kalau sprite di-flip.
+    /// </summary>
+    public bool RaycastSprite(Ray ray, out float distance)
+    {
+        distance = 0f;
+        Sprite sprite = spriteRenderer != null ? spriteRenderer.sprite : null;
+        if (sprite == null) return false;
+
+        Plane plane = new Plane(transform.forward, transform.position);
+        if (!plane.Raycast(ray, out float enter) || enter <= 0f) return false;
+
+        Vector3 local = transform.InverseTransformPoint(ray.GetPoint(enter));
+        if (spriteRenderer.flipX) local.x = -local.x;
+        Vector2 p = new Vector2(local.x, local.y);
+
+        Vector2[] v = sprite.vertices;
+        ushort[] tri = sprite.triangles;
+        for (int i = 0; i + 2 < tri.Length; i += 3)
+        {
+            if (InTriangle(p, v[tri[i]], v[tri[i + 1]], v[tri[i + 2]]))
+            {
+                distance = enter;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static bool InTriangle(Vector2 p, Vector2 a, Vector2 b, Vector2 c)
+    {
+        float d1 = (p.x - b.x) * (a.y - b.y) - (a.x - b.x) * (p.y - b.y);
+        float d2 = (p.x - c.x) * (b.y - c.y) - (b.x - c.x) * (p.y - c.y);
+        float d3 = (p.x - a.x) * (c.y - a.y) - (c.x - a.x) * (p.y - a.y);
+        bool neg = d1 < 0f || d2 < 0f || d3 < 0f;
+        bool pos = d1 > 0f || d2 > 0f || d3 > 0f;
+        return !(neg && pos);
+    }
+
+    /// <summary>
+    /// Posisi dunia dari titik pixel di gambar (dihitung dari pivot tengah-bawah, untuk gambar asli tanpa dibalik).
+    /// Ikut sisi hadap (flip), skala, dan kemiringan billboard. Dipakai untuk titik keluar peluru (moncong).
+    /// </summary>
+    public Vector3 PixelToWorld(Vector2 pixelOffset)
+    {
+        Sprite sprite = spriteRenderer != null ? spriteRenderer.sprite : null;
+        float ppu = sprite != null ? sprite.pixelsPerUnit : 64f;
+        float x = pixelOffset.x / ppu * (spriteRenderer != null && spriteRenderer.flipX ? -1f : 1f);
+        return transform.TransformPoint(new Vector3(x, pixelOffset.y / ppu, 0f));
+    }
+
+    /// <summary>
     /// Hadapkan sprite ke kiri / kanan (dibalik horizontal). artFacesRight = arah hadap gambar aslinya.
     /// </summary>
     public void SetFacing(bool faceRight, bool artFacesRight)
