@@ -623,10 +623,12 @@ public class GridManager : MonoBehaviour
                     cellContainer
                 );
 
+                // Jalur tanpa celah antar tile, supaya terlihat menyambung mulus (bukan kotak-kotak)
+                float tileWidth = tileType == TileType.BarePath ? cellSize : cellSize * 0.95f;
                 newCell.transform.localScale = new Vector3(
-                    cellSize * 0.95f,
+                    tileWidth,
                     0.15f,
-                    cellSize * 0.95f
+                    tileWidth
                 );
 
                 newCell.Setup(
@@ -682,12 +684,20 @@ public class GridManager : MonoBehaviour
         artRoot.SetParent(transform, false);
 
         int spawned = 0;
+        List<Vector3> forestSpots = new List<Vector3>();
+        List<Vector3> forestFrontSpots = new List<Vector3>();
         foreach (GridCell cell in AllCells())
         {
             GameObject prefab = ArenaArt.PickRandom(arenaArt.GetModels(cell.Type));
             if (prefab == null && cell.Type == TileType.Wall && arenaArt.baseWallModel != null)
             {
                 // Markas berdiri di atas tanah berumput
+                prefab = ArenaArt.PickRandom(arenaArt.grassModels);
+            }
+            bool forestCell = prefab == null && cell.Type == TileType.Forest && arenaArt.backgroundEnvironment != null;
+            if (forestCell)
+            {
+                // Tile hutan pinggir arena: tanah berumput + pohon dari model background
                 prefab = ArenaArt.PickRandom(arenaArt.grassModels);
             }
             if (prefab == null)
@@ -700,13 +710,18 @@ public class GridManager : MonoBehaviour
             GameObject model = arenaArt.SpawnFitted(prefab, cell.transform.position, cellSize, groundY, artRoot, out float topY);
             model.name = $"{prefab.name}_R{cell.Row}_C{cell.Column}";
             cell.SetArtModel(model, topY);
+            if (forestCell)
+            {
+                // Baris terdepan (dekat kamera) cukup semak, supaya tidak menutupi arena
+                (cell.Row == 0 ? forestFrontSpots : forestSpots).Add(new Vector3(cell.transform.position.x, topY, cell.transform.position.z));
+            }
             MaxSurfaceY = Mathf.Max(MaxSurfaceY, topY);
             spawned++;
         }
 
         Debug.Log($"Arena Art: {spawned} model tile 3D dipasang.");
 
-        arenaArt.SpawnBackground(transform.position, new Vector2(columns * cellSize, rows * cellSize), artRoot);
+        arenaArt.SpawnBackground(transform.position, new Vector2(columns * cellSize, rows * cellSize), artRoot, forestSpots, forestFrontSpots);
         SpawnBaseWall(artRoot);
     }
 
@@ -759,6 +774,14 @@ public class GridManager : MonoBehaviour
 
         MeshRenderer mr = ground.GetComponent<MeshRenderer>();
         if (forestMaterial != null) mr.sharedMaterial = forestMaterial;
+        if (arenaArt != null && arenaArt.backgroundEnvironment != null)
+        {
+            // Lantai hutan di luar model background: hijau tua senada, bukan hijau terang placeholder
+            MaterialPropertyBlock block = new MaterialPropertyBlock();
+            block.SetColor("_BaseColor", arenaArt.outerGroundColor);
+            block.SetColor("_Color", arenaArt.outerGroundColor);
+            mr.SetPropertyBlock(block);
+        }
         mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
     }
 

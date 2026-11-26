@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -36,6 +37,39 @@ public class ArenaArt : ScriptableObject
     [Tooltip("Panjang tembok dibanding deretan tile Wall (1 = pas)")]
     public float baseWallLength = 1.15f;
     public Vector3 baseWallOffset = Vector3.zero;
+
+    [Header("Kerimbunan hutan (ditambah acak di luar arena)")]
+    [Tooltip("Jumlah pohon tambahan di kiri, kanan & belakang arena")]
+    public int extraTrees = 450;
+    [Tooltip("Jumlah semak tambahan (juga di depan arena, karena pendek tidak menutupi arena)")]
+    public int extraBushes = 160;
+    [Tooltip("Jarak bebas dari tepi arena (meter dunia)")]
+    public float forestClearance = 0.05f;
+    [Tooltip("Jarak antar pohon di barisan rapat tepat di tepi arena (kiri, kanan, belakang). 0 = tanpa barisan tepi")]
+    public float edgeTreeSpacing = 0.9f;
+    [Tooltip("Seberapa jauh hutan tambahan menyebar dari arena (kali ukuran arena)")]
+    public float forestDepth = 1.4f;
+    [Tooltip("Warna lantai hutan paling luar (di luar model background)")]
+    public Color outerGroundColor = new Color(0.2f, 0.33f, 0.15f);
+
+    [Header("Tampilan lingkungan (background & markas)")]
+    [Tooltip("Pohon & semak selalu tegak menghadap kamera (seperti sprite tower & musuh)")]
+    public bool billboardFoliage = true;
+    [Tooltip("Centang kalau gambar pohon terlihat terbalik kiri-kanan / gelap")]
+    public bool flipFoliageFacing = false;
+    [Tooltip("Goyangan angin pohon (derajat). 0 = diam")]
+    [Range(0f, 8f)] public float windSway = 2.5f;
+    public float windSpeed = 1.2f;
+    [Tooltip("Pengali warna pohon, semak & daun (>1 = lebih cerah)")]
+    [ColorUsage(false, true)] public Color foliageTint = new Color(1.15f, 1.3f, 1.05f);
+    [Tooltip("Cahaya sendiri pohon: bagian yang membelakangi matahari tetap cerah")]
+    [Range(0f, 1f)] public float foliageGlow = 0.3f;
+    [ColorUsage(false, true)] public Color groundTint = new Color(1.15f, 1.25f, 1f);
+    [Range(0f, 1f)] public float groundGlow = 0.15f;
+    [Tooltip("Pengali warna batu & markas")]
+    [ColorUsage(false, true)] public Color propTint = new Color(1.35f, 1.3f, 1.25f);
+    [Tooltip("Variasi warna acak per objek supaya tidak seragam")]
+    [Range(0f, 0.3f)] public float colorVariation = 0.12f;
 
     [Header("Penyesuaian")]
     [Tooltip("Rotasi tambahan kalau model dari Blender rebah / miring (misal X = -90)")]
@@ -142,6 +176,13 @@ public class ArenaArt : ScriptableObject
         return b;
     }
 
+    private static string MaterialNames(Renderer r)
+    {
+        string names = "";
+        foreach (Material m in r.sharedMaterials) if (m != null) names += m.name + "|";
+        return names;
+    }
+
     private static GameObject InstantiateStatic(GameObject prefab, Transform parent)
     {
         // Rotasi bawaan root dipertahankan (koreksi sumbu Blender)
@@ -154,7 +195,8 @@ public class ArenaArt : ScriptableObject
     /// Pasang hutan sekitar arena. Skala dipaskan supaya lubang di tengah model = ukuran arena,
     /// dan sisi yang lebih panjang (hutan lebat) selalu di belakang arena (jauh dari kamera).
     /// </summary>
-    public GameObject SpawnBackground(Vector3 arenaCenter, Vector2 arenaSize, Transform parent)
+    public GameObject SpawnBackground(Vector3 arenaCenter, Vector2 arenaSize, Transform parent,
+        List<Vector3> forestTileSpots = null, List<Vector3> forestFrontSpots = null)
     {
         if (backgroundEnvironment == null) return null;
 
@@ -179,6 +221,8 @@ public class ArenaArt : ScriptableObject
             // Pohon / semak latar tidak perlu melempar bayangan ke arena
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
+        EnvironmentFoliage.Apply(go, this, new Rect(arenaCenter.x - arenaSize.x * 0.5f, arenaCenter.z - arenaSize.y * 0.5f, arenaSize.x, arenaSize.y),
+            forestTileSpots, forestFrontSpots);
         return go;
     }
 
@@ -198,13 +242,26 @@ public class ArenaArt : ScriptableObject
             return go;
         }
 
-        // Badan tembok = renderer terlebar; pintu = renderer bermaterial "Door"
-        Renderer body = renderers[0];
+        // Badan tembok = renderer bermaterial "BaseWall" (bukan sulur / pohon yang kotak batasnya bisa lebih besar);
+        // cadangan: renderer non-daun terlebar. Pintu = renderer bermaterial "Door".
+        Renderer body = null;
         Renderer door = null;
         foreach (Renderer r in renderers)
         {
-            if (r.bounds.size.x * r.bounds.size.y > body.bounds.size.x * body.bounds.size.y) body = r;
-            if (door == null && r.sharedMaterial != null && r.sharedMaterial.name.Contains("Door")) door = r;
+            string matName = MaterialNames(r);
+            if (door == null && matName.Contains("Door")) door = r;
+            if (!matName.Contains("BaseWall") || matName.Contains("Lea") || matName.Contains("Bush") || matName.Contains("Tree")) continue;
+            if (body == null || r.bounds.size.x * r.bounds.size.y > body.bounds.size.x * body.bounds.size.y) body = r;
+        }
+        if (body == null)
+        {
+            foreach (Renderer r in renderers)
+            {
+                string matName = MaterialNames(r);
+                if (matName.Contains("Lea") || matName.Contains("Bush") || matName.Contains("Tree")) continue;
+                if (body == null || r.bounds.size.x * r.bounds.size.y > body.bounds.size.x * body.bounds.size.y) body = r;
+            }
+            if (body == null) body = renderers[0];
         }
 
         // Sumbu panjang model asli = X. Putar supaya sejajar deretan tile Wall.
@@ -232,6 +289,7 @@ public class ArenaArt : ScriptableObject
         Bounds bodyBounds = body.bounds;
         Vector3 shift = new Vector3(wallCenter.x - bodyBounds.center.x, groundY - bodyBounds.min.y, wallCenter.z - bodyBounds.center.z);
         go.transform.position += shift + baseWallOffset;
+        EnvironmentFoliage.Apply(go, this);
         return go;
     }
 
