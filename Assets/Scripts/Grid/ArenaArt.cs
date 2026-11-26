@@ -60,10 +60,10 @@ public class ArenaArt : ScriptableObject
     [Tooltip("Goyangan angin pohon (derajat). 0 = diam")]
     [Range(0f, 8f)] public float windSway = 2.5f;
     public float windSpeed = 1.2f;
-    [Tooltip("Pengali warna pohon, semak & daun (>1 = lebih cerah)")]
-    [ColorUsage(false, true)] public Color foliageTint = new Color(1.15f, 1.3f, 1.05f);
-    [Tooltip("Cahaya sendiri pohon: bagian yang membelakangi matahari tetap cerah")]
-    [Range(0f, 1f)] public float foliageGlow = 0.3f;
+    [Tooltip("Pengali warna pohon, semak & daun. Merah/kuning lebih tinggi dari biru = hangat")]
+    [ColorUsage(false, true)] public Color foliageTint = new Color(1.08f, 1f, 0.8f);
+    [Tooltip("Kabut hangat yang ditambahkan rata ke pohon: menurunkan saturasi & menghangatkan warna. Hitam = tanpa kabut")]
+    [ColorUsage(false, true)] public Color foliageHaze = new Color(0.11f, 0.09f, 0.05f);
     [ColorUsage(false, true)] public Color groundTint = new Color(1.15f, 1.25f, 1f);
     [Range(0f, 1f)] public float groundGlow = 0.15f;
     [Tooltip("Pengali warna batu & markas")]

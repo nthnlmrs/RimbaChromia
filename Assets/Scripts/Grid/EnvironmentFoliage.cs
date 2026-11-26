@@ -21,6 +21,7 @@ public class EnvironmentFoliage : MonoBehaviour
 
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
     private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
+    private static readonly int EmissionMapId = Shader.PropertyToID("_EmissionMap");
 
     private readonly List<Card> cards = new List<Card>();
     private ArenaArt art;
@@ -154,7 +155,8 @@ public class EnvironmentFoliage : MonoBehaviour
 
             Color tint;
             float glow;
-            if (IsFoliage(mat)) { tint = art.foliageTint; glow = art.foliageGlow; }
+            bool foliage = IsFoliage(mat);
+            if (foliage) { tint = art.foliageTint; glow = 0f; }
             else if (IsGround(mat)) { tint = art.groundTint; glow = art.groundGlow; }
             else { tint = art.propTint; glow = 0f; }
 
@@ -169,7 +171,16 @@ public class EnvironmentFoliage : MonoBehaviour
             if (mat.IsKeywordEnabled("_EMISSION"))
             {
                 // Cahaya sendiri dari teksturnya: bagian gelap / membelakangi matahari tetap berwarna
-                block.SetColor(EmissionColorId, Multiply(tint, variation) * glow);
+                if (foliage)
+                {
+                    // Warna rata (bukan dari tekstur) = kabut hangat: hijau jadi lebih kalem & hangat
+                    block.SetTexture(EmissionMapId, Texture2D.whiteTexture);
+                    block.SetColor(EmissionColorId, Multiply(art.foliageHaze, variation));
+                }
+                else
+                {
+                    block.SetColor(EmissionColorId, Multiply(tint, variation) * glow);
+                }
             }
             r.SetPropertyBlock(block);
 

@@ -6,6 +6,7 @@ using UnityEngine;
 /// - Gelombang angin merambat melintasi arena (helai bersebelahan bergerak berurutan)
 /// - Hembusan kuat-lemah berubah pelan
 /// - Helai yang sedang ditindih tower hampir diam
+/// - Semua helai menghadap kamera (sejajar bidang layar), apa pun putaran acak tile-nya
 /// Satu komponen untuk seluruh arena (otomatis ditambahkan GridManager).
 /// </summary>
 public class GrassWind : MonoBehaviour
@@ -20,11 +21,14 @@ public class GrassWind : MonoBehaviour
     [SerializeField] private float waveDensity = 0.45f;
     [Tooltip("Seberapa lambat kuat-lemah hembusan berubah")]
     [SerializeField] private float gustSpeed = 0.2f;
+    [Tooltip("Helai rumput selalu menghadap kamera")]
+    [SerializeField] private bool faceCamera = true;
 
     private struct Blade
     {
         public Transform transform;
         public Quaternion rotation;
+        public Quaternion correction;
         public float phase;
         public float seed;
         public GridCell cell;
@@ -32,6 +36,7 @@ public class GrassWind : MonoBehaviour
 
     private readonly List<Blade> blades = new List<Blade>();
     private GridManager grid;
+    private Camera cam;
 
     private void Start()
     {
@@ -59,10 +64,14 @@ public class GrassWind : MonoBehaviour
             {
                 if (t == null) continue;
                 Vector3 p = t.position;
+                // Rotasi tegak bawaan helai tanpa arah hadapnya (arah hadap diganti arah kamera)
+                Vector3 forward = Vector3.ProjectOnPlane(t.rotation * Vector3.forward, Vector3.up);
+                if (forward.sqrMagnitude < 0.0001f) forward = Vector3.forward;
                 blades.Add(new Blade
                 {
                     transform = t,
                     rotation = t.localRotation,
+                    correction = Quaternion.Inverse(Quaternion.LookRotation(forward, Vector3.up)) * t.rotation,
                     phase = (p.x * dir.x + p.z * dir.y) * waveDensity,
                     seed = Random.value * 6.28f,
                     cell = cell
@@ -71,9 +80,12 @@ public class GrassWind : MonoBehaviour
         }
     }
 
-    private void Update()
+    private void LateUpdate()
     {
         if (blades.Count == 0) return;
+        if (cam == null) cam = Camera.main;
+        bool billboard = faceCamera && cam != null;
+        Quaternion camRotation = billboard ? cam.transform.rotation : Quaternion.identity;
 
         float t = Time.time;
         float gust = 0.55f + 0.45f * Mathf.PerlinNoise(t * gustSpeed, 0.37f);
@@ -90,7 +102,9 @@ public class GrassWind : MonoBehaviour
             float angle = (wave * gust + flutter) * swayAngle * calm;
 
             // Sumbu Z lokal = miring ke samping, sumbu X lokal = condong maju/mundur (pivot di pangkal helai)
-            b.transform.localRotation = b.rotation * Quaternion.Euler(angle * 0.35f, 0f, angle);
+            Quaternion sway = Quaternion.Euler(angle * 0.35f, 0f, angle);
+            if (billboard) b.transform.rotation = camRotation * sway * b.correction;
+            else b.transform.localRotation = b.rotation * sway;
         }
     }
 }
