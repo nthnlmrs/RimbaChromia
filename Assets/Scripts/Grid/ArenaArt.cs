@@ -54,7 +54,29 @@ public class ArenaArt : ScriptableObject
 
     [Header("Tampilan lingkungan (background & markas)")]
     [Tooltip("Kecerahan semua yang di luar stage (hutan, tanah latar, tile hutan pinggir). <1 = lebih gelap, supaya fokus ke arena")]
-    [Range(0.2f, 1f)] public float outsideBrightness = 0.6f;
+    [Range(0.2f, 1f)] public float outsideBrightness = 0.45f;
+    [Tooltip("Kecerahan pohon & semak di luar stage (terpisah dari tanah, supaya pohon tidak ikut terlalu gelap)")]
+    [Range(0.2f, 1.5f)] public float outsideFoliageBrightness = 0.9f;
+
+    [Header("Sinar matahari (sun ray) dari celah pohon")]
+    public bool sunRays = true;
+    [Tooltip("Satu sinar besar yang menyorot stage. Juga indikator bahaya: makin rendah HP Wall, makin redup & berkedip")]
+    public bool mainSunRay = true;
+    public Color mainRayColor = new Color(1f, 0.9f, 0.62f, 0.16f);
+    [Tooltip("Lebar sinar besar dibanding lebar arena")]
+    [Range(0.1f, 1f)] public float mainRayWidth = 0.55f;
+    public float mainRayLength = 26f;
+    [Tooltip("Genangan cahaya hangat di lantai stage tempat sinar besar jatuh")]
+    public Color mainPoolColor = new Color(1f, 0.92f, 0.65f, 0.14f);
+    [Tooltip("HP Wall (persen) saat sinar mulai meredup. Makin mendekati 0, makin redup & berkedip")]
+    [Range(0.1f, 1f)] public float dangerStartHP = 0.6f;
+    [Tooltip("Sinar kecil tambahan di tepi arena (0 = tidak ada)")]
+    [Range(0, 20)] public int sunRayCount = 0;
+    [Tooltip("Warna & kekuatan sinar kecil (alpha = seberapa terang)")]
+    public Color sunRayColor = new Color(1f, 0.88f, 0.6f, 0.2f);
+    [Tooltip("Panjang sinar dari kanopi ke tanah (meter dunia)")]
+    public float sunRayLength = 7f;
+    public Vector2 sunRayWidth = new Vector2(0.5f, 1.4f);
     [Tooltip("Pohon & semak selalu tegak menghadap kamera (seperti sprite tower & musuh)")]
     public bool billboardFoliage = true;
     [Tooltip("Centang kalau gambar pohon terlihat terbalik kiri-kanan / gelap")]
@@ -63,7 +85,7 @@ public class ArenaArt : ScriptableObject
     [Range(0f, 8f)] public float windSway = 2.5f;
     public float windSpeed = 1.2f;
     [Tooltip("Pengali warna pohon, semak & daun. Merah/kuning lebih tinggi dari biru = hangat")]
-    [ColorUsage(false, true)] public Color foliageTint = new Color(0.95f, 0.9f, 0.72f);
+    [ColorUsage(false, true)] public Color foliageTint = new Color(1f, 0.95f, 0.76f);
     [Tooltip("Kabut hangat yang ditambahkan rata ke pohon: menurunkan saturasi & menghangatkan warna. Hitam = tanpa kabut")]
     [ColorUsage(false, true)] public Color foliageHaze = new Color(0.095f, 0.085f, 0.065f);
     [ColorUsage(false, true)] public Color groundTint = new Color(1.15f, 1.25f, 1f);

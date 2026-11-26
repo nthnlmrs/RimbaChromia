@@ -296,7 +296,8 @@ public class GameHUD : MonoBehaviour
     }
 
     /// <summary>Satu baris volume: panah kiri, 6 daun (klik daun = set level), panah kanan.</summary>
-    private class VolumeRow
+    /// <summary>Dipakai juga oleh MainMenu (panel settings).</summary>
+    public class VolumeRow
     {
         private readonly Image[] leaves = new Image[GameSettings.MaxLevel];
         private readonly UISkin skin;

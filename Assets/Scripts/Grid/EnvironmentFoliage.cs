@@ -165,7 +165,8 @@ public class EnvironmentFoliage : MonoBehaviour
             // Variasi kecil per objek: terang-gelap & sedikit lebih hijau / kuning
             float v = art.colorVariation;
             float bright = 1f + Random.Range(-v, v);
-            bright *= brightness; // area luar stage digelapkan supaya fokus ke arena
+            // Area luar stage digelapkan supaya fokus ke arena; pohon punya kecerahan sendiri
+            bright *= brightness < 0.999f && foliage ? art.outsideFoliageBrightness : brightness;
             Color variation = new Color(bright * (1f + Random.Range(-v, v) * 0.5f), bright, bright * (1f + Random.Range(-v, v) * 0.5f), 1f);
 
             Color baseColor = mat.HasProperty(BaseColorId) ? mat.GetColor(BaseColorId) : Color.white;

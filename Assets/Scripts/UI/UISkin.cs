@@ -48,6 +48,13 @@ public class UISkin : ScriptableObject
     public Sprite[] waveCountdown = new Sprite[3];
     public WavePlateArt[] wavePlates = new WavePlateArt[0];
 
+    [Header("Main menu (tombol kayu polos & papan judul; teks ditulis kode)")]
+    public Sprite menuButtonOrange;
+    public Sprite menuButtonRed;
+    public Sprite menuTitleSign;
+    [Tooltip("Panel settings 795x629 (seperti panel pause, tanpa judul & teks tombol)")]
+    public Sprite menuSettingsPanel;
+
     [Header("Layar akhir")]
     public Sprite victoryBanner;
     public Sprite defeatedBanner;

@@ -163,5 +163,9 @@ MonoBehaviour:
   - current: 3
     total: 3
     sprite: {fileID: 21300000, guid: 0ca4f38dc5a10a644b1b6fd55e30891b, type: 3}
+  menuButtonOrange: {fileID: 21300000, guid: ade758eee9833b9b313b7e78a878da6e, type: 3}
+  menuButtonRed: {fileID: 21300000, guid: 28f630201aee3b37e2d6eb6bf22ae4ef, type: 3}
+  menuTitleSign: {fileID: 21300000, guid: 30dbd4a23bf56e6016b5d85ba7250793, type: 3}
+  menuSettingsPanel: {fileID: 21300000, guid: 737f9dea213e62d7bac5db7d45487c89, type: 3}
   victoryBanner: {fileID: 21300000, guid: b3f7f99500e7a244c93b0463cf422792, type: 3}
   defeatedBanner: {fileID: 21300000, guid: 41169b6ed20085941aedd5c5c749240a, type: 3}

@@ -724,6 +724,7 @@ public class GridManager : MonoBehaviour
 
         arenaArt.SpawnBackground(transform.position, new Vector2(columns * cellSize, rows * cellSize), artRoot, forestSpots, forestFrontSpots);
         SpawnBaseWall(artRoot);
+        SunRays.Create(arenaArt, WorldBounds, MaxSurfaceY, artRoot);
     }
 
     /// <summary>Markas di atas deretan tile Wall, pintu menghadap ke tengah arena.</summary>
