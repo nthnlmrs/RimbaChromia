@@ -73,7 +73,8 @@ public class GridManager : MonoBehaviour
     {
         if (target == null || target.Data == null || incoming == null) return null;
         if (target.Data.color != incoming.color) return "Merge needs two towers of the same type";
-        if (target.Data.tier != incoming.tier) return "Merge needs two towers of the same level";
+        if (target.Data.tier != incoming.tier)
+            return $"Merge needs two towers of the same level (Level {incoming.tier} + Level {target.Data.tier})";
         if (target.Data.nextTier == null) return "This tower is already at max level";
         return null;
     }
@@ -275,6 +276,7 @@ public class GridManager : MonoBehaviour
     // ------------------------------------------------------------------
 
     private Tower dragSource;
+    private Vector2 dragStartMouse;
     public Tower DragSource => dragSource;
 
     private void HandleDragMerge(GridCell cellUnderCursor)
@@ -286,6 +288,7 @@ public class GridManager : MonoBehaviour
             cellUnderCursor != null && cellUnderCursor.OccupyingTower != null)
         {
             dragSource = cellUnderCursor.OccupyingTower;
+            dragStartMouse = mouse.position.ReadValue();
             return;
         }
 
@@ -310,24 +313,33 @@ public class GridManager : MonoBehaviour
         Tower source = dragSource;
         dragSource = null;
 
-        if (source == null || cellUnderCursor == null || cellUnderCursor == source.OccupiedCell)
+        if (source == null)
         {
-            return; // dilepas di tempat sendiri = cuma klik biasa
+            return;
         }
 
-        Tower target = cellUnderCursor.OccupyingTower;
-        if (target != null && target.CanMergeWith(source.Data))
+        Tower target = cellUnderCursor != null ? cellUnderCursor.OccupyingTower : null;
+        if (target != null && target != source && target.CanMergeWith(source.Data))
         {
             // Gratis: kedua tower sudah dibayar saat dipasang. Tower sumber dilebur ke target.
             source.ConsumeForMerge();
             target.TryMergeUpgrade();
+            return;
         }
-        else
+
+        // Gagal merge. Alasan diambil dari tower yang BENAR-BENAR ditunjuk kursor (bukan tile di bawahnya),
+        // supaya pemain selalu tahu kenapa, termasuk saat tower bertumpuk.
+        Tower pointed = lastPointedTower != null ? lastPointedTower : (target != source ? target : null);
+        // Klik biasa (kursor hampir tidak bergeser) bukan percobaan merge -> tanpa pesan
+        bool moved = (mouse.position.ReadValue() - dragStartMouse).sqrMagnitude > 14f * 14f;
+        if (pointed == null || !moved)
         {
-            Debug.Log("Drag-merge gagal: harus tower yang sama persis (warna & tier) dan belum tier 3.");
-            string reason = MergeRejectReason(target, source.Data);
-            if (reason != null) OnActionRejected?.Invoke(reason);
+            return;
         }
+
+        string reason = MergeRejectReason(pointed, source.Data) ?? "Drop the tower onto an identical tower to merge";
+        Debug.Log($"Drag-merge gagal: {source.TowerName} (T{source.TowerTier}) -> {pointed.TowerName} (T{pointed.TowerTier}). {reason}");
+        OnActionRejected?.Invoke(reason);
     }
 
     private void HandleHotbarShortcuts()
@@ -392,6 +404,9 @@ public class GridManager : MonoBehaviour
 
     private GridCell lastGroundCell;
 
+    /// <summary>Tower paling depan di bawah kursor selain tower yang sedang di-drag (untuk pesan alasan).</summary>
+    private Tower lastPointedTower;
+
     /// <summary>
     /// Tile yang ditunjuk kursor untuk AKSI (klik, pasang, merge). Sprite tower yang tinggi bisa menutupi
     /// tile di belakangnya, jadi aturannya:
@@ -402,6 +417,7 @@ public class GridManager : MonoBehaviour
     public GridCell GetCellUnderCursor()
     {
         lastGroundCell = null;
+        lastPointedTower = null;
 
         if (Mouse.current == null)
         {
@@ -451,6 +467,7 @@ public class GridManager : MonoBehaviour
         Tower mergeTarget = null;
         float nearest = float.MaxValue;
         float nearestMerge = float.MaxValue;
+        float pointedDistance = float.MaxValue;
         foreach (Tower tower in Tower.ActiveTowers)
         {
             if (tower == null || tower.OccupiedCell == null) continue;
@@ -460,6 +477,12 @@ public class GridManager : MonoBehaviour
             {
                 nearest = distance;
                 towerHit = tower;
+            }
+
+            if (tower != dragSource && (lastPointedTower == null || distance < pointedDistance))
+            {
+                pointedDistance = distance;
+                lastPointedTower = tower;
             }
 
             bool canMerge = mergeData != null && tower != dragSource && tower.CanMergeWith(mergeData);
