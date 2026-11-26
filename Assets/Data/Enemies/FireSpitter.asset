@@ -29,6 +29,13 @@ MonoBehaviour:
   projectileFlightTime: 0.6
   projectileColor: {r: 1, g: 0.62, b: 0.1, a: 1}
   sprite: {fileID: 0}
+  spriteFacesRight: 0
   spriteScale: 1.5
+  walkSheet: {fileID: 2800000, guid: 76860fedd57e889b1f313355ea8a55a9, type: 3}
+  attackSheet: {fileID: 2800000, guid: 4da62792a0c04dac68c0369891095037, type: 3}
+  walkFps: 8
+  attackFps: 12
+  sheetPivotX: 0.5
+  sheetCropTop: 4
   placeholderColor: {r: 1, g: 0.45, b: 0.1, a: 1}
   placeholderScale: {x: 0.55, y: 0.55, z: 0.55}

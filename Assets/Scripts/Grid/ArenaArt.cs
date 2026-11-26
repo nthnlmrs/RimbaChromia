@@ -20,6 +20,23 @@ public class ArenaArt : ScriptableObject
     public GameObject[] fireLevel2Models = new GameObject[0];
     public GameObject[] fireLevel3Models = new GameObject[0];
 
+    [Header("Lingkungan sekitar arena (FBX dari artist)")]
+    [Tooltip("Hutan & tanah di luar arena. Punya lubang di tengah tempat arena berada")]
+    public GameObject backgroundEnvironment;
+    [Tooltip("Ukuran lubang arena di model background (meter, ukuran asli FBX). Dipakai untuk memaskan skala otomatis")]
+    public Vector2 backgroundHoleSize = new Vector2(43.63f, 33.2f);
+    [Tooltip("Pengali skala setelah dipaskan otomatis ke ukuran arena")]
+    public float backgroundScale = 1f;
+    public Vector3 backgroundOffset = Vector3.zero;
+    [Tooltip("Centang kalau sisi hutan lebat muncul di depan kamera (otomatis diletakkan di belakang arena)")]
+    public bool flipBackground = false;
+
+    [Tooltip("Markas / tembok yang dijaga. Dipasang di atas deretan tile Wall, pintunya menghadap ke arena")]
+    public GameObject baseWallModel;
+    [Tooltip("Panjang tembok dibanding deretan tile Wall (1 = pas)")]
+    public float baseWallLength = 1.15f;
+    public Vector3 baseWallOffset = Vector3.zero;
+
     [Header("Penyesuaian")]
     [Tooltip("Rotasi tambahan kalau model dari Blender rebah / miring (misal X = -90)")]
     public Vector3 rotationOffset = Vector3.zero;
@@ -113,6 +130,108 @@ public class ArenaArt : ScriptableObject
         // Permukaan = atas BALOK tile (bukan ujung helai rumput / lidah api), supaya tower berdiri di tanah
         Renderer baseRenderer = FindBaseRenderer(renderers);
         topY = baseRenderer.bounds.max.y + surfaceOffset;
+        return go;
+    }
+
+    private static Bounds RendererBounds(GameObject go)
+    {
+        Renderer[] renderers = go.GetComponentsInChildren<Renderer>();
+        if (renderers.Length == 0) return new Bounds(go.transform.position, Vector3.zero);
+        Bounds b = renderers[0].bounds;
+        for (int i = 1; i < renderers.Length; i++) b.Encapsulate(renderers[i].bounds);
+        return b;
+    }
+
+    private static GameObject InstantiateStatic(GameObject prefab, Transform parent)
+    {
+        // Rotasi bawaan root dipertahankan (koreksi sumbu Blender)
+        GameObject go = Instantiate(prefab, Vector3.zero, prefab.transform.rotation, parent);
+        foreach (Collider col in go.GetComponentsInChildren<Collider>()) col.enabled = false;
+        return go;
+    }
+
+    /// <summary>
+    /// Pasang hutan sekitar arena. Skala dipaskan supaya lubang di tengah model = ukuran arena,
+    /// dan sisi yang lebih panjang (hutan lebat) selalu di belakang arena (jauh dari kamera).
+    /// </summary>
+    public GameObject SpawnBackground(Vector3 arenaCenter, Vector2 arenaSize, Transform parent)
+    {
+        if (backgroundEnvironment == null) return null;
+
+        GameObject go = InstantiateStatic(backgroundEnvironment, parent);
+        go.name = "Background Environment";
+
+        float fit = Mathf.Max(arenaSize.x / Mathf.Max(0.01f, backgroundHoleSize.x), arenaSize.y / Mathf.Max(0.01f, backgroundHoleSize.y));
+        go.transform.localScale = go.transform.localScale * fit * Mathf.Max(0.01f, backgroundScale);
+        go.transform.position = arenaCenter;
+
+        // Bagian yang menjorok lebih jauh = sisi belakang (+Z, menjauhi kamera)
+        Bounds b = RendererBounds(go);
+        bool extendsToCamera = b.center.z < arenaCenter.z - 0.01f;
+        if (extendsToCamera != flipBackground)
+        {
+            go.transform.RotateAround(arenaCenter, Vector3.up, 180f);
+        }
+
+        go.transform.position += backgroundOffset;
+        foreach (Renderer r in go.GetComponentsInChildren<Renderer>())
+        {
+            // Pohon / semak latar tidak perlu melempar bayangan ke arena
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+        return go;
+    }
+
+    /// <summary>
+    /// Pasang markas di atas deretan tile Wall: panjangnya mengikuti deretan, pintunya menghadap ke arena.
+    /// </summary>
+    public GameObject SpawnBaseWall(Vector3 wallCenter, Vector3 lineDirection, float lineLength, Vector3 towardArena, float groundY, Transform parent)
+    {
+        if (baseWallModel == null) return null;
+
+        GameObject go = InstantiateStatic(baseWallModel, parent);
+        go.name = "Base Wall";
+        Renderer[] renderers = go.GetComponentsInChildren<Renderer>();
+        if (renderers.Length == 0)
+        {
+            go.transform.position = wallCenter;
+            return go;
+        }
+
+        // Badan tembok = renderer terlebar; pintu = renderer bermaterial "Door"
+        Renderer body = renderers[0];
+        Renderer door = null;
+        foreach (Renderer r in renderers)
+        {
+            if (r.bounds.size.x * r.bounds.size.y > body.bounds.size.x * body.bounds.size.y) body = r;
+            if (door == null && r.sharedMaterial != null && r.sharedMaterial.name.Contains("Door")) door = r;
+        }
+
+        // Sumbu panjang model asli = X. Putar supaya sejajar deretan tile Wall.
+        Vector3 line = new Vector3(lineDirection.x, 0f, lineDirection.z).normalized;
+        float yaw = Vector3.SignedAngle(Vector3.right, line, Vector3.up);
+        go.transform.rotation = Quaternion.Euler(0f, yaw, 0f) * go.transform.rotation;
+
+        // Pintu harus menghadap ke arena; kalau terbalik putar 180 derajat
+        if (door != null)
+        {
+            Vector3 toDoor = door.bounds.center - body.bounds.center;
+            toDoor.y = 0f;
+            if (Vector3.Dot(toDoor, towardArena) < 0f) go.transform.Rotate(Vector3.up, 180f, Space.World);
+        }
+
+        // Skala: panjang badan tembok = panjang deretan Wall
+        Vector3 size = body.bounds.size;
+        float bodyLength = Mathf.Abs(line.x) > Mathf.Abs(line.z) ? size.x : size.z;
+        if (bodyLength > 0.0001f)
+        {
+            go.transform.localScale = go.transform.localScale * (lineLength * baseWallLength / bodyLength);
+        }
+
+        // Tengah badan ke tengah deretan, alas ke permukaan tanah
+        Bounds bodyBounds = body.bounds;
+        Vector3 shift = new Vector3(wallCenter.x - bodyBounds.center.x, groundY - bodyBounds.min.y, wallCenter.z - bodyBounds.center.z);
+        go.transform.position += shift + baseWallOffset;
         return go;
     }
 

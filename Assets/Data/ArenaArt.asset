@@ -32,6 +32,14 @@ MonoBehaviour:
   - {fileID: 919132149155446097, guid: 1cae3db259a9f5a4da58d277382a252d, type: 3}
   - {fileID: 919132149155446097, guid: a76bdf69f65c58445b28f1e4fb2933b4, type: 3}
   - {fileID: 919132149155446097, guid: 6c663fa3c5462114c8a1da8d55e71725, type: 3}
+  backgroundEnvironment: {fileID: 919132149155446097, guid: 83788a79348cb8f9bfcb8fa3dadfa2e0, type: 3}
+  backgroundHoleSize: {x: 43.63, y: 33.2}
+  backgroundScale: 1
+  backgroundOffset: {x: 0, y: 0, z: 0}
+  flipBackground: 0
+  baseWallModel: {fileID: 919132149155446097, guid: cef70c19d4cf17416b5774fdf21dbde9, type: 3}
+  baseWallLength: 1.15
+  baseWallOffset: {x: 0, y: 0, z: 0}
   rotationOffset: {x: 0, y: 0, z: 0}
   randomYaw: 1
   footprint: 1

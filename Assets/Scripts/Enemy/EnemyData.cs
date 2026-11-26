@@ -49,6 +49,20 @@ public class EnemyData : ScriptableObject
     [Tooltip("Skala sprite. Usahakan kelipatan bulat (1, 2) supaya pixel art tetap rapi")]
     public float spriteScale = 1f;
 
+    [Header("Animasi Spritesheet (frame persegi berjajar ke kanan, 64 PPU)")]
+    [Tooltip("Spritesheet jalan. Kosong = pakai Sprite diam di atas")]
+    public Texture2D walkSheet;
+    [Tooltip("Spritesheet serang, diputar sekali setiap kali menyerang")]
+    public Texture2D attackSheet;
+    public float walkFps = 8f;
+    public float attackFps = 12f;
+    [Tooltip("Posisi kaki/badan dalam frame (0 = kiri, 1 = kanan). Jadi titik putar saat dibalik")]
+    [Range(0f, 1f)] public float sheetPivotX = 0.5f;
+    [Tooltip("Pixel kosong di atas semua frame yang dipotong (supaya health bar tidak terlalu tinggi)")]
+    public int sheetCropTop = 0;
+
+    public bool HasAnimation => walkSheet != null;
+
     [Header("Placeholder Visual (dipakai kalau sprite kosong)")]
     public Color placeholderColor = new Color(0f, 0.75f, 1f);
     public Vector3 placeholderScale = Vector3.one;

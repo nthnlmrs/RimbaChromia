@@ -685,6 +685,11 @@ public class GridManager : MonoBehaviour
         foreach (GridCell cell in AllCells())
         {
             GameObject prefab = ArenaArt.PickRandom(arenaArt.GetModels(cell.Type));
+            if (prefab == null && cell.Type == TileType.Wall && arenaArt.baseWallModel != null)
+            {
+                // Markas berdiri di atas tanah berumput
+                prefab = ArenaArt.PickRandom(arenaArt.grassModels);
+            }
             if (prefab == null)
             {
                 MaxSurfaceY = Mathf.Max(MaxSurfaceY, cell.SurfaceY);
@@ -700,6 +705,43 @@ public class GridManager : MonoBehaviour
         }
 
         Debug.Log($"Arena Art: {spawned} model tile 3D dipasang.");
+
+        arenaArt.SpawnBackground(transform.position, new Vector2(columns * cellSize, rows * cellSize), artRoot);
+        SpawnBaseWall(artRoot);
+    }
+
+    /// <summary>Markas di atas deretan tile Wall, pintu menghadap ke tengah arena.</summary>
+    private void SpawnBaseWall(Transform artRoot)
+    {
+        if (arenaArt.baseWallModel == null) return;
+
+        List<GridCell> walls = new List<GridCell>();
+        foreach (GridCell cell in AllCells())
+        {
+            if (cell.Type == TileType.Wall) walls.Add(cell);
+        }
+        if (walls.Count == 0) return;
+
+        Vector3 min = walls[0].transform.position, max = min, sum = Vector3.zero;
+        float groundY = float.MinValue;
+        foreach (GridCell cell in walls)
+        {
+            Vector3 p = cell.transform.position;
+            min = Vector3.Min(min, p);
+            max = Vector3.Max(max, p);
+            sum += p;
+            groundY = Mathf.Max(groundY, cell.SurfaceY);
+        }
+        Vector3 center = sum / walls.Count;
+
+        bool alongX = (max.x - min.x) >= (max.z - min.z);
+        Vector3 line = alongX ? Vector3.right : Vector3.forward;
+        float length = (alongX ? max.x - min.x : max.z - min.z) + cellSize;
+
+        Vector3 toArena = transform.position - center;
+        toArena = alongX ? new Vector3(0f, 0f, Mathf.Sign(toArena.z)) : new Vector3(Mathf.Sign(toArena.x), 0f, 0f);
+
+        arenaArt.SpawnBaseWall(center, line, length, toArena, groundY, artRoot);
     }
 
     /// <summary>

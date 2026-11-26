@@ -10,6 +10,7 @@ public class Enemy : MonoBehaviour
     private static void ResetStaticsOnPlay()
     {
         ActiveEnemies.Clear();
+        SheetCache.Clear();
     }
 
     [Header("Ember Bot Stats")]
@@ -190,7 +191,7 @@ public class Enemy : MonoBehaviour
         if (TryRangedAttack())
         {
             rangedTimer = 0f;
-            stopTimer = data.stopDuration;
+            stopTimer = Mathf.Max(data.stopDuration, AttackAnimLength);
         }
     }
 
@@ -242,35 +243,56 @@ public class Enemy : MonoBehaviour
 
         if (towerCount == 0 && grassCount == 0) return false;
 
-        Vector3 launch = transform.position + Vector3.up * (VisualHeight * 0.6f);
         if (towerCount > 0) FaceTowards(towerBuffer[0].transform.position);
 
+        List<LaunchOrder> orders = new List<LaunchOrder>();
         for (int i = 0; i < towerCount; i++)
         {
             Tower target = towerBuffer[i];
-            GridCell targetCell = target.OccupiedCell;
-            LaunchAt(launch, targetCell, target);
+            orders.Add(new LaunchOrder { cell = target.OccupiedCell, tower = target });
         }
 
         // Rumput yang belum terbakar diutamakan, baru yang sudah terbakar
-        int launched = LaunchAtRandom(launch, grassBuffer, grassCount);
-        launched += LaunchAtRandom(launch, burningGrassBuffer, grassCount - launched);
+        int launched = PickRandom(orders, grassBuffer, grassCount);
+        launched += PickRandom(orders, burningGrassBuffer, grassCount - launched);
 
-        return towerCount > 0 || launched > 0;
+        if (orders.Count == 0) return false;
+
+        // Animasi serang diputar dulu, proyektil keluar di tengah animasi (saat api / lemparan muncul)
+        PlayAttackAnimation();
+        StartCoroutine(LaunchAfter(AttackAnimLength * 0.55f, orders));
+        return true;
     }
 
-    private int LaunchAtRandom(Vector3 launch, List<GridCell> pool, int count)
+    private struct LaunchOrder
     {
-        int launched = 0;
-        while (launched < count && pool.Count > 0)
+        public GridCell cell;
+        public Tower tower;
+    }
+
+    private System.Collections.IEnumerator LaunchAfter(float delay, List<LaunchOrder> orders)
+    {
+        if (delay > 0f) yield return new WaitForSeconds(delay);
+        if (IsDead) yield break;
+
+        Vector3 launch = transform.position + Vector3.up * (VisualHeight * 0.6f);
+        foreach (LaunchOrder order in orders)
+        {
+            LaunchAt(launch, order.cell, order.tower);
+        }
+    }
+
+    private static int PickRandom(List<LaunchOrder> orders, List<GridCell> pool, int count)
+    {
+        int picked = 0;
+        while (picked < count && pool.Count > 0)
         {
             int pick = Random.Range(0, pool.Count);
-            GridCell cell = pool[pick];
+            orders.Add(new LaunchOrder { cell = pool[pick] });
             pool.RemoveAt(pick);
-            LaunchAt(launch, cell, null);
-            launched++;
+            picked++;
         }
-        return launched;
+        return picked;
     }
 
     private void LaunchAt(Vector3 launch, GridCell cell, Tower towerTarget)
@@ -329,7 +351,13 @@ public class Enemy : MonoBehaviour
         transform.localScale = Vector3.one * scale;
         heightOffset = 0f; // pivot sprite di kaki -> berdiri tepat di permukaan tile
 
-        Sprite sprite = data.sprite;
+        walkFrames = data.HasAnimation ? GetFrames(data.walkSheet, data) : null;
+        attackFrames = data.attackSheet != null ? GetFrames(data.attackSheet, data) : null;
+        animTime = 0f;
+        attackAnimTimer = 0f;
+        shownFrame = null;
+
+        Sprite sprite = walkFrames != null && walkFrames.Length > 0 ? walkFrames[0] : data.sprite;
         if (sprite == null)
         {
             // Belum ada art: placeholder pixel 2D seukuran placeholderScale lama
@@ -340,6 +368,7 @@ public class Enemy : MonoBehaviour
 
         if (billboard == null) billboard = SpriteBillboard.Create(transform, sprite, true, SpriteBillboard.EnemyGroundOffset, 0.6f);
         else billboard.SetSprite(sprite);
+        shownFrame = sprite;
 
         baseColor = Color.white; // sprite sudah berwarna, tint putih = warna asli
         ApplyTint();
@@ -390,6 +419,7 @@ public class Enemy : MonoBehaviour
         Vector3 cellPos = targetCell.transform.position;
         Vector3 destination = new Vector3(cellPos.x, targetCell.SurfaceY + heightOffset, cellPos.z);
         FaceTowards(destination);
+        movedThisFrame = true;
         transform.position = Vector3.MoveTowards(
             transform.position,
             destination,
@@ -406,6 +436,8 @@ public class Enemy : MonoBehaviour
     private void AttackTower(Tower tower)
     {
         attackTimer += Time.deltaTime;
+        FaceTowards(tower.transform.position);
+        AnticipateMeleeAttack();
         if (attackTimer < attackCooldown)
         {
             return;
@@ -418,6 +450,7 @@ public class Enemy : MonoBehaviour
     private void AttackWall()
     {
         attackTimer += Time.deltaTime;
+        AnticipateMeleeAttack();
         if (attackTimer < attackCooldown)
         {
             return;
@@ -428,6 +461,93 @@ public class Enemy : MonoBehaviour
         if (wallHealth != null)
         {
             wallHealth.TakeDamage(attackDamage);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Animasi spritesheet
+    // ------------------------------------------------------------------
+
+    private static readonly Dictionary<Texture2D, Sprite[]> SheetCache = new Dictionary<Texture2D, Sprite[]>();
+
+    private Sprite[] walkFrames;
+    private Sprite[] attackFrames;
+    private Sprite shownFrame;
+    private float animTime;
+    private float attackAnimTimer;
+    private bool movedThisFrame;
+
+    private float AttackAnimLength =>
+        attackFrames != null && attackFrames.Length > 0 && data != null ? attackFrames.Length / Mathf.Max(1f, data.attackFps) : 0f;
+
+    /// <summary>Potong spritesheet jadi frame persegi (tinggi sheet = lebar frame). Hasil di-cache per tekstur.</summary>
+    private static Sprite[] GetFrames(Texture2D sheet, EnemyData d)
+    {
+        if (sheet == null) return null;
+        if (SheetCache.TryGetValue(sheet, out Sprite[] cached) && cached != null && cached.Length > 0 && cached[0] != null) return cached;
+
+        int size = sheet.height;
+        int count = Mathf.Max(1, sheet.width / size);
+        int crop = Mathf.Clamp(d.sheetCropTop, 0, size - 1);
+        Vector2 pivot = new Vector2(d.sheetPivotX, 0f);
+        Sprite[] frames = new Sprite[count];
+        for (int i = 0; i < count; i++)
+        {
+            Rect rect = new Rect(i * size, 0f, size, size - crop);
+            frames[i] = Sprite.Create(sheet, rect, pivot, 64f, 0, SpriteMeshType.FullRect);
+            frames[i].name = $"{sheet.name}_{i}";
+        }
+        SheetCache[sheet] = frames;
+        return frames;
+    }
+
+    private void PlayAttackAnimation()
+    {
+        if (AttackAnimLength <= 0f) return;
+        attackAnimTimer = AttackAnimLength;
+    }
+
+    /// <summary>Serangan jarak dekat: animasi dimulai lebih awal supaya pukulan pas di akhir animasi.</summary>
+    private void AnticipateMeleeAttack()
+    {
+        float length = AttackAnimLength;
+        if (length <= 0f || attackAnimTimer > 0f) return;
+        if (attackTimer >= attackCooldown - length * 0.7f) PlayAttackAnimation();
+    }
+
+    private void LateUpdate()
+    {
+        bool moved = movedThisFrame;
+        movedThisFrame = false;
+        if (billboard == null || data == null) return;
+
+        Sprite frame = null;
+        if (attackAnimTimer > 0f && attackFrames != null && attackFrames.Length > 0)
+        {
+            float length = AttackAnimLength;
+            attackAnimTimer -= Time.deltaTime;
+            int index = Mathf.Clamp(Mathf.FloorToInt((1f - Mathf.Max(0f, attackAnimTimer) / length) * attackFrames.Length), 0, attackFrames.Length - 1);
+            frame = attackFrames[index];
+        }
+        else if (walkFrames != null && walkFrames.Length > 0)
+        {
+            // Jalan: putar walk cycle (ikut melambat saat kena slow). Diam: frame pertama.
+            if (moved)
+            {
+                float speedFactor = moveSpeed > 0f ? CurrentMoveSpeed() / moveSpeed : 1f;
+                animTime += Time.deltaTime * data.walkFps * speedFactor;
+                frame = walkFrames[Mathf.FloorToInt(animTime) % walkFrames.Length];
+            }
+            else
+            {
+                frame = walkFrames[0];
+            }
+        }
+
+        if (frame != null && frame != shownFrame)
+        {
+            shownFrame = frame;
+            billboard.SetSprite(frame);
         }
     }
 
