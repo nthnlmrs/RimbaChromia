@@ -53,6 +53,8 @@ public class ArenaArt : ScriptableObject
     public Color outerGroundColor = new Color(0.2f, 0.33f, 0.15f);
 
     [Header("Tampilan lingkungan (background & markas)")]
+    [Tooltip("Kecerahan semua yang di luar stage (hutan, tanah latar, tile hutan pinggir). <1 = lebih gelap, supaya fokus ke arena")]
+    [Range(0.2f, 1f)] public float outsideBrightness = 0.6f;
     [Tooltip("Pohon & semak selalu tegak menghadap kamera (seperti sprite tower & musuh)")]
     public bool billboardFoliage = true;
     [Tooltip("Centang kalau gambar pohon terlihat terbalik kiri-kanan / gelap")]
@@ -61,9 +63,9 @@ public class ArenaArt : ScriptableObject
     [Range(0f, 8f)] public float windSway = 2.5f;
     public float windSpeed = 1.2f;
     [Tooltip("Pengali warna pohon, semak & daun. Merah/kuning lebih tinggi dari biru = hangat")]
-    [ColorUsage(false, true)] public Color foliageTint = new Color(1.08f, 1f, 0.8f);
+    [ColorUsage(false, true)] public Color foliageTint = new Color(0.95f, 0.9f, 0.72f);
     [Tooltip("Kabut hangat yang ditambahkan rata ke pohon: menurunkan saturasi & menghangatkan warna. Hitam = tanpa kabut")]
-    [ColorUsage(false, true)] public Color foliageHaze = new Color(0.11f, 0.09f, 0.05f);
+    [ColorUsage(false, true)] public Color foliageHaze = new Color(0.095f, 0.085f, 0.065f);
     [ColorUsage(false, true)] public Color groundTint = new Color(1.15f, 1.25f, 1f);
     [Range(0f, 1f)] public float groundGlow = 0.15f;
     [Tooltip("Pengali warna batu & markas")]
@@ -183,6 +185,26 @@ public class ArenaArt : ScriptableObject
         return names;
     }
 
+    /// <summary>Gelapkan model di luar stage (tile hutan pinggir) sesuai Outside Brightness.</summary>
+    public void DarkenOutside(GameObject go)
+    {
+        if (go == null || outsideBrightness >= 0.999f) return;
+        MaterialPropertyBlock block = new MaterialPropertyBlock();
+        foreach (Renderer r in go.GetComponentsInChildren<Renderer>())
+        {
+            Material mat = r.sharedMaterial;
+            if (mat == null || !mat.HasProperty("_BaseColor")) continue;
+            Color c = mat.GetColor("_BaseColor");
+            r.GetPropertyBlock(block);
+            block.SetColor("_BaseColor", new Color(c.r * outsideBrightness, c.g * outsideBrightness, c.b * outsideBrightness, c.a));
+            if (mat.IsKeywordEnabled("_EMISSION") && mat.HasProperty("_EmissionColor"))
+            {
+                block.SetColor("_EmissionColor", mat.GetColor("_EmissionColor") * outsideBrightness);
+            }
+            r.SetPropertyBlock(block);
+        }
+    }
+
     private static GameObject InstantiateStatic(GameObject prefab, Transform parent)
     {
         // Rotasi bawaan root dipertahankan (koreksi sumbu Blender)
@@ -222,7 +244,7 @@ public class ArenaArt : ScriptableObject
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
         EnvironmentFoliage.Apply(go, this, new Rect(arenaCenter.x - arenaSize.x * 0.5f, arenaCenter.z - arenaSize.y * 0.5f, arenaSize.x, arenaSize.y),
-            forestTileSpots, forestFrontSpots);
+            forestTileSpots, forestFrontSpots, outsideBrightness);
         return go;
     }
 

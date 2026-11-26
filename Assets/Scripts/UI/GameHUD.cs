@@ -505,7 +505,7 @@ public class GameHUD : MonoBehaviour
         StageState state = waves.State;
         bool ended = state == StageState.Victory || state == StageState.Defeat;
         if (!ended || shownResultFor == state) return;
-        if (StoryPlayer.IsPlaying) return; // tunggu cerita Ending selesai dulu
+        if (StoryPlayer.IsPlaying || CreditsRoll.IsPlaying) return; // tunggu cerita Ending & credit selesai dulu
 
         shownResultFor = state;
         isPaused = false;

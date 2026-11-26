@@ -6,6 +6,7 @@ using UnityEngine.UI;
 /// Panduan stage Tutorial (GDD Progression: "Tutorial stage, player can deploy and merge tower regardless of their cost").
 /// Taduh memberi petunjuk langkah demi langkah; tiap langkah selesai otomatis saat pemain melakukannya.
 /// Hitung mundur wave ditahan sampai panduan sampai langkah terakhir.
+/// Urutan mengikuti naskah GDD: Red -> Blue -> Yellow -> api & Green -> Red rusak lalu merge -> info tower.
 /// </summary>
 public class TutorialGuide : MonoBehaviour
 {
@@ -13,8 +14,10 @@ public class TutorialGuide : MonoBehaviour
     {
         PlaceBarrier,
         PlaceAttacker,
-        Merge,
+        PlaceInsight,
         Extinguish,
+        Merge,
+        TowerInfo,
         StartWave,
         FirstWave,
         BreakTip,
@@ -25,15 +28,17 @@ public class TutorialGuide : MonoBehaviour
     {
         "Enemies come from the left toward The Wall. Drag the <b>Red Pillar [1]</b> card onto the <b>PATH</b> to block them.",
         "Nice! Now drag a <b>Blue Sprinkler [5]</b> onto the <b>GRASS</b> next to the path. It shoots enemies passing by.",
-        "Two <b>identical</b> towers can merge into a stronger one. Place a second Blue, then <b>drag one Blue onto the other</b>.",
-        "Look, the grass is on fire! Fire spreads and hurts towers. Place a <b>Green Sprout [4]</b> to put it out from anywhere.",
+        "We need insight to deploy towers. A <b>Yellow Beacon [3]</b> generates insight. Place it on the <b>GRASS</b>, far from the enemy spawn to keep it safe from fire.",
+        "Look, the grass is on fire! Don't panic. Place a <b>Green Sprout [4]</b>, it puts out fire from anywhere.",
+        "The Red Pillar is damaged! Merge it with the same type to recover its HP: drag another <b>Red Pillar [1]</b> card onto it. Merged towers get stronger too.",
+        "Red blocks, Orange surprises them with instant damage, Yellow makes insight, Green puts out fire, Blue hits one enemy, Purple hits an area. <b>Click a placed tower</b> to see its info (hover a card to see it before placing).",
         "You're ready! Press <b>START NOW</b> or wait for the countdown. Protect The Wall!",
         "",
         "The next wave brings a <b>Walking Furnace</b> that throws burning rocks. Add more attackers and keep your Green alive!",
         ""
     };
 
-    private const int GuidedSteps = 5;
+    private const int GuidedSteps = 7;
 
     private WaveManager waves;
     private GridManager grid;
@@ -42,6 +47,7 @@ public class TutorialGuide : MonoBehaviour
     private TextMeshProUGUI progress;
     private Step step = Step.PlaceBarrier;
     private bool demoFireLit;
+    private bool barrierDamaged;
 
     public void Build(WaveManager waveManager, GridManager gridManager)
     {
@@ -88,8 +94,17 @@ public class TutorialGuide : MonoBehaviour
                 if (HasTower(t => t.role == TowerRole.Attacker)) Next();
                 break;
 
+            case Step.PlaceInsight:
+                if (HasTower(t => t.role == TowerRole.InsightGenerator)) Next();
+                break;
+
             case Step.Merge:
-                if (HasTower(t => t.tier >= 2)) Next();
+                if (!barrierDamaged) DamageBarrier();
+                if (HasTower(t => t.role == TowerRole.Barrier && t.tier >= 2)) Next();
+                break;
+
+            case Step.TowerInfo:
+                if (grid != null && grid.SelectedCell != null && grid.SelectedCell.IsOccupied) Next();
                 break;
 
             case Step.Extinguish:
@@ -137,6 +152,20 @@ public class TutorialGuide : MonoBehaviour
             if (t != null && t.Data != null && match(t.Data)) return true;
         }
         return false;
+    }
+
+    /// <summary>GDD: "[red tower -50% hp]" supaya pemain belajar merge untuk memulihkan HP.</summary>
+    private void DamageBarrier()
+    {
+        foreach (Tower t in Tower.ActiveTowers)
+        {
+            if (t != null && t.Data != null && t.Data.role == TowerRole.Barrier && !t.IsImmune)
+            {
+                barrierDamaged = true; // kalau belum ada Red, dicoba lagi begitu pemain memasangnya
+                t.TakeDamage(t.CurrentHP - t.MaxHP * 0.5f);
+                return;
+            }
+        }
     }
 
     /// <summary>Nyalakan api contoh di rumput dekat jalur (tengah map) supaya pemain bisa mencoba Green.</summary>

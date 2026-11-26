@@ -712,6 +712,7 @@ public class GridManager : MonoBehaviour
             cell.SetArtModel(model, topY);
             if (forestCell)
             {
+                arenaArt.DarkenOutside(model);
                 // Baris terdepan (dekat kamera) cukup semak, supaya tidak menutupi arena
                 (cell.Row == 0 ? forestFrontSpots : forestSpots).Add(new Vector3(cell.transform.position.x, topY, cell.transform.position.z));
             }
@@ -778,8 +779,10 @@ public class GridManager : MonoBehaviour
         {
             // Lantai hutan di luar model background: hijau tua senada, bukan hijau terang placeholder
             MaterialPropertyBlock block = new MaterialPropertyBlock();
-            block.SetColor("_BaseColor", arenaArt.outerGroundColor);
-            block.SetColor("_Color", arenaArt.outerGroundColor);
+            Color outer = arenaArt.outerGroundColor * arenaArt.outsideBrightness;
+            outer.a = 1f;
+            block.SetColor("_BaseColor", outer);
+            block.SetColor("_Color", outer);
             mr.SetPropertyBlock(block);
         }
         mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;

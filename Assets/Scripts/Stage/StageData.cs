@@ -38,6 +38,15 @@ public class StageData : ScriptableObject
     public bool freeCost = false;
     [Tooltip("Tampilkan panduan Taduh langkah demi langkah")]
     public bool isTutorial = false;
+    [Tooltip("Credit bergulir setelah Ending (hanya dipakai di stage terakhir). Boleh pakai rich text TMP")]
+    [TextArea(6, 20)]
+    public string credits =
+        "<size=80><b>RIMBA CHROMIA</b></size>\n\nGimersia 2026\n\n\n" +
+        "<color=#FFD24D>Game Design</color>\n(team name)\n\n" +
+        "<color=#FFD24D>Programming</color>\n(team name)\n\n" +
+        "<color=#FFD24D>Art</color>\n(team name)\n\n" +
+        "<color=#FFD24D>Story</color>\n(team name)\n\n\n" +
+        "Thank you for protecting the forest.";
 
     [Header("Timing (GDD: 15 detik persiapan & 15 detik jeda antar wave)")]
     public float prepTime = 15f;

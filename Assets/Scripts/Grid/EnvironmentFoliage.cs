@@ -25,16 +25,18 @@ public class EnvironmentFoliage : MonoBehaviour
 
     private readonly List<Card> cards = new List<Card>();
     private ArenaArt art;
+    private float brightness = 1f;
     private Camera cam;
 
     /// <param name="arena">Area arena (X/Z dunia). Diisi = tambah pohon & semak acak di sekitarnya.</param>
     /// <param name="treeSpots">Titik tile hutan di pinggir arena yang ditanami pohon (Y = permukaan tile).</param>
     /// <param name="bushSpots">Titik tile hutan yang cukup ditanami semak (baris dekat kamera).</param>
-    public static void Apply(GameObject root, ArenaArt art, Rect? arena = null, List<Vector3> treeSpots = null, List<Vector3> bushSpots = null)
+    public static void Apply(GameObject root, ArenaArt art, Rect? arena = null, List<Vector3> treeSpots = null, List<Vector3> bushSpots = null, float brightness = 1f)
     {
         if (root == null || art == null) return;
         EnvironmentFoliage foliage = root.AddComponent<EnvironmentFoliage>();
         foliage.art = art;
+        foliage.brightness = brightness;
         if (arena.HasValue) foliage.Populate(arena.Value, treeSpots, bushSpots);
         foliage.Setup();
     }
@@ -163,6 +165,7 @@ public class EnvironmentFoliage : MonoBehaviour
             // Variasi kecil per objek: terang-gelap & sedikit lebih hijau / kuning
             float v = art.colorVariation;
             float bright = 1f + Random.Range(-v, v);
+            bright *= brightness; // area luar stage digelapkan supaya fokus ke arena
             Color variation = new Color(bright * (1f + Random.Range(-v, v) * 0.5f), bright, bright * (1f + Random.Range(-v, v) * 0.5f), 1f);
 
             Color baseColor = mat.HasProperty(BaseColorId) ? mat.GetColor(BaseColorId) : Color.white;

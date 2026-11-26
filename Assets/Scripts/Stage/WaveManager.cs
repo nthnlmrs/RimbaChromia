@@ -322,9 +322,15 @@ public class WaveManager : MonoBehaviour
             Time.timeScale = 0f;
 
             // GDD: Ending (visual novel) setelah stage terakhir. Panel hasil muncul setelah cerita selesai.
+            // Stage terakhir: lanjut credit bergulir setelah cerita
+            string credits = HasNextStage ? null : currentStage.credits;
             if (currentStage.outroDialogue != null)
             {
-                StoryPlayer.Play(currentStage.outroDialogue, null);
+                StoryPlayer.Play(currentStage.outroDialogue, () => CreditsRoll.Play(credits, null));
+            }
+            else
+            {
+                CreditsRoll.Play(credits, null);
             }
             return;
         }
