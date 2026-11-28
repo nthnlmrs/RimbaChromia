@@ -348,6 +348,7 @@ public class Tower : MonoBehaviour
         }
 
         actionTimer = 0f;
+        AudioManager.PurpleAttack();
         foreach (Enemy enemy in enemyBuffer)
         {
             enemy.TakeDamage(Damage);
@@ -545,7 +546,14 @@ public class Tower : MonoBehaviour
 
     public void TakeDamage(float amount)
     {
-        if (amount <= 0f || currentHP <= 0f || IsImmune)
+        if (amount <= 0f || currentHP <= 0f)
+        {
+            return;
+        }
+
+        // Red (Barrier) menahan pukulan: bunyi perisai, juga saat kebal setelah merge
+        if (data != null && data.role == TowerRole.Barrier) AudioManager.ShieldHit();
+        if (IsImmune)
         {
             return;
         }

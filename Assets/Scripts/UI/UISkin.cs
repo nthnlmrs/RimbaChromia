@@ -48,14 +48,16 @@ public class UISkin : ScriptableObject
     public Sprite[] waveCountdown = new Sprite[3];
     public WavePlateArt[] wavePlates = new WavePlateArt[0];
 
-    [Header("Main menu (tombol kayu polos & papan judul; teks ditulis kode)")]
+    [Header("Main menu")]
     [Tooltip("Gambar latar layar penuh (1920x1080). Kosong = latar hutan 3D")]
     public Sprite menuBackground;
     public Sprite menuLogo;
     [Tooltip("Karakter di pojok main menu (Taduh)")]
     public Sprite menuCharacter;
-    public Sprite menuButtonOrange;
-    public Sprite menuButtonRed;
+    [Tooltip("Tombol kayu bertulisan (teks sudah ada di gambar)")]
+    public Sprite menuStartButton;
+    public Sprite menuSettingsButton;
+    public Sprite menuQuitButton;
     public Sprite menuTitleSign;
     [Tooltip("Panel settings 795x629 (seperti panel pause, tanpa judul & teks tombol)")]
     public Sprite menuSettingsPanel;

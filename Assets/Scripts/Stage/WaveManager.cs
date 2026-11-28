@@ -207,7 +207,11 @@ public class WaveManager : MonoBehaviour
                     break; // tutorial: tunggu pemain selesai mengikuti panduan
                 }
 
+                int secondsBefore = Mathf.CeilToInt(stateTimer);
                 stateTimer -= Time.deltaTime;
+                int secondsNow = Mathf.CeilToInt(stateTimer);
+                // Bunyi hitung mundur saat angka 3, 2, 1 muncul
+                if (secondsNow < secondsBefore && secondsNow >= 1 && secondsNow <= 3) AudioManager.Countdown(secondsNow);
 
                 bool skip = Keyboard.current != null && Keyboard.current[skipCountdownKey].wasPressedThisFrame;
                 if (stateTimer <= 0f || skip)

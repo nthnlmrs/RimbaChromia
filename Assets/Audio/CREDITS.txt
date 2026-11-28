@@ -16,3 +16,10 @@ Sound effects (Pixabay):
 - Wall Hit - https://pixabay.com/sound-effects/film-special-effects-brick-falling-100572/
 
 Original SFX (team): Merge Tower, Blue Shoot, Blue Splash, Tower Placed
+
+Added SFX (team, 2026-11-28):
+- forest-ambience (gameplay ambience), typing (dialogue), countdown1-3 (3-2-1 before a wave)
+- hover-tower, invalid-place, purple-tower-attack, shiled-tower (Red blocks a hit)
+- af-walk (enemy footsteps), enemy-death
+- ember-bot-attack, fire-attack (Fire Spitter), pyro-shooter, wf-attack (Walking Furnace)
+- tower-runtuh: not used yet

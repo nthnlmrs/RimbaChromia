@@ -258,6 +258,7 @@ public class GridManager : MonoBehaviour
         }
 
         bool placed = TryPlaceOrMergeTower(cell);
+        if (!placed) AudioManager.InvalidPlace();
         if (placed)
         {
             SelectCell(cell);
@@ -342,6 +343,7 @@ public class GridManager : MonoBehaviour
 
         string reason = MergeRejectReason(pointed, source.Data) ?? "Drop the tower onto an identical tower to merge";
         Debug.Log($"Drag-merge gagal: {source.TowerName} (T{source.TowerTier}) -> {pointed.TowerName} (T{pointed.TowerTier}). {reason}");
+        AudioManager.InvalidPlace();
         OnActionRejected?.Invoke(reason);
     }
 
@@ -572,7 +574,11 @@ public class GridManager : MonoBehaviour
         if (target == highlightedTower) return;
         if (highlightedTower != null) highlightedTower.SetHighlight(false);
         highlightedTower = target;
-        if (highlightedTower != null) highlightedTower.SetHighlight(true);
+        if (highlightedTower != null)
+        {
+            highlightedTower.SetHighlight(true);
+            AudioManager.TowerHover();
+        }
     }
 
     private void UpdateHover(GridCell cellUnderCursor)
@@ -924,6 +930,7 @@ public class GridManager : MonoBehaviour
         }
 
         bool placed = TryPlaceOrMergeTower(clickedCell);
+        if (!placed) AudioManager.InvalidPlace();
 
         // Satu kali pasang lalu selesai (seperti drag kartu di GDD). Tahan Shift untuk pasang berulang.
         bool keepPlacing = Keyboard.current != null && Keyboard.current.shiftKey.isPressed;

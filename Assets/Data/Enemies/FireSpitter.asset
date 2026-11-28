@@ -28,6 +28,7 @@ MonoBehaviour:
   canAttackWhileBlocked: 0
   projectileFlightTime: 0.6
   projectileColor: {r: 1, g: 0.62, b: 0.1, a: 1}
+  attackSound: {fileID: 8300000, guid: 41042982066eabc4581dac7446e39cbe, type: 3}
   sprite: {fileID: 0}
   spriteFacesRight: 0
   spriteScale: 1.5

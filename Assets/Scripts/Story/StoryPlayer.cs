@@ -217,6 +217,7 @@ public class StoryPlayer : MonoBehaviour
         }
         // Segitiga muncul & memantul naik-turun setelah teks selesai diketik
         bool done = bodyText.maxVisibleCharacters >= totalChars;
+        AudioManager.SetTyping(!done && !closing);
         continueArrow.gameObject.SetActive(done);
         if (done) continueArrow.anchoredPosition = ArrowRest + new Vector2(0f, Mathf.Abs(Mathf.Sin(Time.unscaledTime * 4f)) * 10f);
 
@@ -263,6 +264,7 @@ public class StoryPlayer : MonoBehaviour
     private void End()
     {
         IsPlaying = false;
+        AudioManager.SetTyping(false);
         AudioManager.StoryFinished();
         Time.timeScale = previousTimeScale;
         Action callback = onFinished;
@@ -274,6 +276,7 @@ public class StoryPlayer : MonoBehaviour
     private void OnDestroy()
     {
         // Jaga-jaga kalau scene berganti saat cerita masih jalan
+        AudioManager.SetTyping(false);
         if (IsPlaying)
         {
             IsPlaying = false;

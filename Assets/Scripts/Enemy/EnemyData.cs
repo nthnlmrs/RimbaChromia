@@ -41,6 +41,10 @@ public class EnemyData : ScriptableObject
     public float projectileFlightTime = 0.7f;
     public Color projectileColor = new Color(1f, 0.45f, 0.1f);
 
+    [Header("Suara")]
+    [Tooltip("Diputar setiap kali musuh menyerang (pukul / lempar / sembur). Kosong = tanpa suara")]
+    public AudioClip attackSound;
+
     [Header("Visual 2D (GDD: musuh = sprite 2D)")]
     [Tooltip("Sprite dari artist (pivot tengah-bawah, 64 PPU). Kosong = sprite placeholder berwarna")]
     public Sprite sprite;

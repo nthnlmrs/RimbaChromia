@@ -238,36 +238,26 @@ public class MainMenu : MonoBehaviour
 
         // Tombol kolom kiri: START, SETTINGS, QUIT
         float y = -330f;
-        MenuButton(root, skin?.menuButtonOrange, "START", new Vector2(MenuLeft, y), Play, Color.white);
-        MenuButton(root, skin?.menuButtonOrange, "SETTINGS", new Vector2(MenuLeft, y - ButtonSpacing), OpenSettings, new Color(0.85f, 0.72f, 0.64f));
-        MenuButton(root, skin?.menuButtonRed, "QUIT", new Vector2(MenuLeft, y - ButtonSpacing * 2f), Quit, Color.white);
+        MenuButton(root, skin?.menuStartButton, "START", new Vector2(MenuLeft, y), Play);
+        MenuButton(root, skin?.menuSettingsButton, "SETTINGS", new Vector2(MenuLeft, y - ButtonSpacing), OpenSettings);
+        MenuButton(root, skin?.menuQuitButton, "QUIT", new Vector2(MenuLeft, y - ButtonSpacing * 2f), Quit);
 
 
         BuildSettings(root, skin);
     }
 
-/// <summary>Tombol kayu bertulisan; posisi = pojok kiri-atas tombol dari pojok kiri-atas layar.</summary>
-    private Button MenuButton(RectTransform parent, Sprite sprite, string label, Vector2 position, UnityEngine.Events.UnityAction onClick, Color tint)
+    /// <summary>
+    /// Tombol kayu dari artist (teks sudah ada di gambar); posisi = pojok kiri-atas tombol dari pojok kiri-atas layar.
+    /// Kalau sprite kosong, dibuat tombol placeholder bertulisan label.
+    /// </summary>
+    private Button MenuButton(RectTransform parent, Sprite sprite, string label, Vector2 position, UnityEngine.Events.UnityAction onClick)
     {
-        Button button;
-        if (sprite != null)
-        {
-            button = UIKit.ArtButton(label, parent, sprite, null, 1f, onClick);
-            button.GetComponent<Image>().preserveAspect = false;
-        }
-        else
-        {
-            button = UIKit.Button(label, parent, "", 40f, onClick);
-        }
+        Button button = sprite != null
+            ? UIKit.ArtButton(label, parent, sprite, null, 1f, onClick)
+            : UIKit.Button(label, parent, label, 40f, onClick);
         RectTransform rt = (RectTransform)button.transform;
         UIKit.Place(rt, new Vector2(0f, 1f), new Vector2(0.5f, 0.5f), position + new Vector2(ButtonSize.x * 0.5f, -ButtonSize.y * 0.5f), ButtonSize);
-        Image image = button.GetComponent<Image>();
-        if (image != null) image.color = tint;
-
-        TextMeshProUGUI text = UIKit.ArtLabel("Label", rt, label, 56f);
-        UIKit.Stretch(text.rectTransform);
-        text.rectTransform.offsetMin = new Vector2(0f, 8f); // sedikit naik: tepi bawah tombol = sisi tebal kayu
-        text.raycastTarget = false;
+        if (sprite != null) button.GetComponent<Image>().preserveAspect = true;
 
         button.gameObject.AddComponent<MenuButtonHover>();
         return button;

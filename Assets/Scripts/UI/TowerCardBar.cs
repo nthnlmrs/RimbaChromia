@@ -140,7 +140,11 @@ public class TowerCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler,
         art.color = grid.CanAfford(data) ? Color.white : new Color(0.45f, 0.42f, 0.42f);
     }
 
-    public void OnPointerEnter(PointerEventData eventData) => IsHovered = true;
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        IsHovered = true;
+        AudioManager.TowerHover();
+    }
     public void OnPointerExit(PointerEventData eventData) => IsHovered = false;
 
     public void OnPointerClick(PointerEventData eventData)

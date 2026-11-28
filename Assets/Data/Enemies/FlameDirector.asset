@@ -28,6 +28,7 @@ MonoBehaviour:
   canAttackWhileBlocked: 1
   projectileFlightTime: 1
   projectileColor: {r: 0.95, g: 0.12, b: 0.05, a: 1}
+  attackSound: {fileID: 0}
   sprite: {fileID: 0}
   spriteScale: 1.5
   walkSheet: {fileID: 2800000, guid: 5378b0c0af476fd15128e62dccee368b, type: 3}

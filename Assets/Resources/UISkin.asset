@@ -166,8 +166,9 @@ MonoBehaviour:
   menuBackground: {fileID: 21300000, guid: 21e01338564ef720a71d10bc1951cb74, type: 3}
   menuLogo: {fileID: 21300000, guid: cd7d5d73c94fb83017801f34f847358a, type: 3}
   menuCharacter: {fileID: 21300000, guid: 32df02948c39ed91b21e999142c9f101, type: 3}
-  menuButtonOrange: {fileID: 21300000, guid: ade758eee9833b9b313b7e78a878da6e, type: 3}
-  menuButtonRed: {fileID: 21300000, guid: 28f630201aee3b37e2d6eb6bf22ae4ef, type: 3}
+  menuStartButton: {fileID: 21300000, guid: b9188f6d03b7bc61484a5c8dfa7a4f1d, type: 3}
+  menuSettingsButton: {fileID: 21300000, guid: b480e1bd500ecd8e5df009f75a80ede6, type: 3}
+  menuQuitButton: {fileID: 21300000, guid: c68b6fddd3a7a0cf14f5cbf302102ba8, type: 3}
   menuTitleSign: {fileID: 21300000, guid: 30dbd4a23bf56e6016b5d85ba7250793, type: 3}
   menuSettingsPanel: {fileID: 21300000, guid: 737f9dea213e62d7bac5db7d45487c89, type: 3}
   storyDialogueBar: {fileID: 21300000, guid: 9d1ab56bc47aa00fe74bfe128e1fc281, type: 3}

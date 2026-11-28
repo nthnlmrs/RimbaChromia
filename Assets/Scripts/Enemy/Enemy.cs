@@ -276,6 +276,7 @@ public class Enemy : MonoBehaviour
         if (IsDead) yield break;
 
         Vector3 launch = transform.position + Vector3.up * (VisualHeight * 0.6f);
+        AudioManager.EnemyAttack(data != null ? data.attackSound : null);
         foreach (LaunchOrder order in orders)
         {
             LaunchAt(launch, order.cell, order.tower);
@@ -421,6 +422,7 @@ public class Enemy : MonoBehaviour
         Vector3 destination = new Vector3(cellPos.x, targetCell.SurfaceY + heightOffset, cellPos.z);
         FaceTowards(destination);
         movedThisFrame = true;
+        AudioManager.EnemyStep(); // dibatasi global, jadi tidak menumpuk walau musuh banyak
         transform.position = Vector3.MoveTowards(
             transform.position,
             destination,
@@ -445,6 +447,7 @@ public class Enemy : MonoBehaviour
         }
 
         attackTimer = 0f;
+        AudioManager.EnemyAttack(data != null ? data.attackSound : null);
         tower.TakeDamage(attackDamage);
     }
 
@@ -458,6 +461,7 @@ public class Enemy : MonoBehaviour
         }
 
         attackTimer = 0f;
+        AudioManager.EnemyAttack(data != null ? data.attackSound : null);
 
         if (wallHealth != null)
         {
@@ -564,6 +568,7 @@ public class Enemy : MonoBehaviour
         if (currentHP <= 0f)
         {
             Debug.Log($"{gameObject.name} mati!");
+            AudioManager.EnemyDeath();
             PixelVfx.Burst(transform.position + Vector3.up * (VisualHeight * 0.5f), PixelArt.BurstStyle.Smoke, Color.gray, 1.2f);
             Destroy(gameObject);
         }
