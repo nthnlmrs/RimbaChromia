@@ -76,7 +76,7 @@ public class TowerCardBar : MonoBehaviour
         if (show && descriptionPanel.sprite != description)
         {
             descriptionPanel.sprite = description;
-            descriptionPanel.rectTransform.sizeDelta = description.rect.size * UIKit.ArtScale;
+            descriptionPanel.rectTransform.sizeDelta = description.rect.size * UIKit.InfoScale;
         }
     }
 }
@@ -146,6 +146,7 @@ public class TowerCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler,
     public void OnPointerClick(PointerEventData eventData)
     {
         if (dragging || Time.timeScale <= 0f || eventData.button != PointerEventData.InputButton.Left) return;
+        AudioManager.Click();
 
         // Klik kartu yang sedang dipilih = batal
         if (IsSelected) grid.CancelPlacement();

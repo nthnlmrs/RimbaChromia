@@ -201,6 +201,7 @@ public class Tower : MonoBehaviour
         }
 
         TowerVfx.Pulse(occupiedCell.transform.position, AreaSize(data.trapDamageArea), TowerVfx.ColorOf(data.color), 0.4f);
+        AudioManager.Explosion();
         PixelVfx.Burst(transform.position + Vector3.up * 0.35f, PixelArt.BurstStyle.Fire, TowerVfx.ColorOf(data.color), 1.4f + 0.3f * (data.tier - 1));
         PixelVfx.Debris(transform.position + Vector3.up * 0.2f, new Color(0.55f, 0.35f, 0.2f), 6, 1.6f);
 
@@ -253,7 +254,7 @@ public class Tower : MonoBehaviour
 
         actionTimer = 0f;
         FaceTowards(target.transform.position);
-        fire.ReduceFire(target, data.fireReducePerShot);
+        if (fire.ReduceFire(target, data.fireReducePerShot)) AudioManager.FireOut();
         ShowBeam(target.transform.position + Vector3.up * 0.1f);
         PixelVfx.Sparkles(target.transform.position + Vector3.up * 0.25f, PixelVfx.HealGreen, 4, 0.3f, 0.7f);
     }
@@ -302,6 +303,7 @@ public class Tower : MonoBehaviour
         actionTimer = 0f;
         FaceTowards(target.transform.position);
         TowerVfx.FireProjectile(MuzzlePosition, target, Damage, TowerVfx.ColorOf(data.color)); // keluar dari moncong
+        if (data.color == TowerColor.Blue) AudioManager.BlueShoot();
     }
 
     private Enemy FindTargetInRange()
@@ -492,6 +494,12 @@ public class Tower : MonoBehaviour
         : transform.position + Vector3.up * 0.6f;
 
     /// <summary>Kursor mengenai pixel sprite tower ini (bukan area transparan di sekitarnya).</summary>
+    /// <summary>Garis putih di sekeliling tower saat di-hover kursor.</summary>
+    public void SetHighlight(bool on)
+    {
+        if (billboard != null) billboard.SetOutline(on);
+    }
+
     public bool RaycastSprite(Ray ray, out float distance)
     {
         distance = 0f;
@@ -509,6 +517,8 @@ public class Tower : MonoBehaviour
 
     private void TriggerMergeEffect()
     {
+        AudioManager.TowerMerged();
+
         // Red: kebal damage sementara
         if (data.mergeImmunityDuration > 0f)
         {

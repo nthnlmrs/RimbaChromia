@@ -320,6 +320,7 @@ public class MainMenu : MonoBehaviour
         UIKit.PlaceOnArt(hit.rectTransform, pixelCenter, new Vector2(303f, 129f));
         Button button = hit.gameObject.AddComponent<Button>();
         button.targetGraphic = hit;
+        button.onClick.AddListener(AudioManager.Click);
         button.onClick.AddListener(onClick);
 
         TextMeshProUGUI text = UIKit.ArtLabel("Label", hit.rectTransform, label, 50f);

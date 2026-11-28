@@ -116,6 +116,7 @@ public static class UIKit
         colors.colorMultiplier = 1.2f;
         button.colors = colors;
 
+        button.onClick.AddListener(AudioManager.Click);
         if (onClick != null) button.onClick.AddListener(onClick);
 
         TextMeshProUGUI label = Label("Label", bg.transform, text, fontSize, TextAlignmentOptions.Center, TextColor, true);
@@ -216,6 +217,9 @@ public static class UIKit
     /// <summary>Skala art UI terhadap canvas 1920x1080 (mockup artist dibuat di kanvas ~1440 px).</summary>
     public const float ArtScale = 0.85f;
 
+    /// <summary>Skala panel info / deskripsi tower: sebesar mockup (kanvas 1440 -> layar 1920).</summary>
+    public const float InfoScale = 1.3f;
+
     /// <summary>Warna angka di mockup (krem) + outline coklat tua.</summary>
     public static readonly Color ArtText = new Color(0.86f, 0.77f, 0.64f);
     public static readonly Color ArtOutline = new Color(0.16f, 0.08f, 0.04f);
@@ -260,6 +264,7 @@ public static class UIKit
             button.colors = colors;
         }
 
+        button.onClick.AddListener(AudioManager.Click);
         if (onClick != null) button.onClick.AddListener(onClick);
         return button;
     }

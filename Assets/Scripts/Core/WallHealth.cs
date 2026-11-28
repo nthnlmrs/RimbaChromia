@@ -33,6 +33,9 @@ public class WallHealth : MonoBehaviour
             return;
         }
 
+        // Suara hanya untuk serangan musuh (damage api masuk pecahan kecil tiap frame)
+        if (amount >= 1f) AudioManager.WallHit();
+
         int previousWholeHP = Mathf.CeilToInt(currentHP);
         currentHP = Mathf.Max(0f, currentHP - amount);
         OnHealthChanged?.Invoke(currentHP, maxHP);

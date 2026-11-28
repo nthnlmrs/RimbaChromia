@@ -9,7 +9,7 @@ using UnityEngine.UI;
 /// </summary>
 public class TowerInfoPanel : MonoBehaviour
 {
-    private const float ValueFontSize = 20f;
+    private const float ValueFontSize = 28f;
 
     private GridManager grid;
     private RectTransform panel;
@@ -88,7 +88,7 @@ public class TowerInfoPanel : MonoBehaviour
     private void ApplyArt(TowerInfoArt info)
     {
         art.sprite = info.sprite;
-        panel.sizeDelta = info.sprite.rect.size * UIKit.ArtScale;
+        panel.sizeDelta = info.sprite.rect.size * UIKit.InfoScale;
 
         // Nilai ditulis tepat setelah label "ATK:" / "HP:" di gambar
         PlaceValue(atkText.rectTransform, info.atkLabel);
@@ -97,7 +97,7 @@ public class TowerInfoPanel : MonoBehaviour
 
     private static void PlaceValue(RectTransform rt, Vector2 label)
     {
-        float s = UIKit.ArtScale;
+        float s = UIKit.InfoScale;
         rt.anchorMin = new Vector2(0f, 1f);
         rt.anchorMax = new Vector2(0f, 1f);
         rt.pivot = new Vector2(0f, 0.5f);

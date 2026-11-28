@@ -297,6 +297,7 @@ public class VfxProjectile : MonoBehaviour
         if ((transform.position - destination).sqrMagnitude < 0.04f)
         {
             target.TakeDamage(damage);
+            AudioManager.BlueSplash();
             PixelVfx.Burst(destination, PixelArt.BurstStyle.Water, color, 0.7f); // cipratan
             PixelVfx.Debris(destination, color, 4, 1f);
             Destroy(gameObject);

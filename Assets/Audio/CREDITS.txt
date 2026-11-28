@@ -1,0 +1,18 @@
+AUDIO CREDITS
+
+Music (cozy-tunes, see Licenses/cozy-tunes License Agreement.pdf):
+- Main Menu: Gymnopedie No.1
+- Gameplay: Tales from the Vienna Woods
+- Minuet / Minuet (Slower): not used yet
+
+Sound effects (Pixabay):
+- Button Press - https://pixabay.com/sound-effects/film-special-effects-ui-button-click-147358/
+- Defeat - https://pixabay.com/sound-effects/film-special-effects-trumpet-e4-14829/
+- Explosion - https://pixabay.com/sound-effects/film-special-effects-bomb-explosion-1-381972/
+- FIre Out - https://pixabay.com/sound-effects/film-special-effects-fire-extinguishing-212651/
+- On FIre - https://pixabay.com/sound-effects/fire-sound-efftect-21991/
+- Start Wave - https://pixabay.com/sound-effects/musical-trumpets-47123/
+- Victory - https://pixabay.com/sound-effects/musical-tada-fanfare-a-6313/
+- Wall Hit - https://pixabay.com/sound-effects/film-special-effects-brick-falling-100572/
+
+Original SFX (team): Merge Tower, Blue Shoot, Blue Splash, Tower Placed

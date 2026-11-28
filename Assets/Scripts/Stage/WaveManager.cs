@@ -196,6 +196,8 @@ public class WaveManager : MonoBehaviour
 
     private void Update()
     {
+        HandleDebugShortcuts();
+
         switch (state)
         {
             case StageState.Preparing:
@@ -353,6 +355,13 @@ public class WaveManager : MonoBehaviour
         state = newState;
         stateTimer = duration;
 
+        switch (newState)
+        {
+            case StageState.WaveRunning: AudioManager.WaveStart(); break;
+            case StageState.Victory: AudioManager.Victory(); break;
+            case StageState.Defeat: AudioManager.Defeat(); break;
+        }
+
         // GDD: api tidak menyebar & tidak naik level saat persiapan / jeda
         if (FireManager.Instance != null)
         {
@@ -390,6 +399,55 @@ public class WaveManager : MonoBehaviour
         {
             StartWave(currentWaveIndex + 1);
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Shortcut debug untuk mencoba stage / wave tertentu (Editor & development build saja)
+    //   F1..F4 = Tutorial, Stage 1, Stage 2, Stage 3 (tanpa cerita pembuka)
+    //   J      = lompat ke wave terakhir (boss Stage 3), K = kalahkan semua musuh di layar
+    // ------------------------------------------------------------------
+
+    private void HandleDebugShortcuts()
+    {
+        if (!Application.isEditor && !Debug.isDebugBuild) return;
+        Keyboard kb = Keyboard.current;
+        if (kb == null) return;
+
+        Key[] stageKeys = { Key.F1, Key.F2, Key.F3, Key.F4 };
+        for (int i = 0; i < stageKeys.Length && i < StageCount; i++)
+        {
+            if (kb[stageKeys[i]].wasPressedThisFrame)
+            {
+                SelectedStageIndex = i;
+                skipIntroOnce = true;
+                ReloadScene();
+                return;
+            }
+        }
+
+        if (kb.kKey.wasPressedThisFrame) KillAllEnemies();
+        if (kb.jKey.wasPressedThisFrame) JumpToLastWave();
+    }
+
+    private static void KillAllEnemies()
+    {
+        foreach (Enemy enemy in new List<Enemy>(Enemy.ActiveEnemies))
+        {
+            if (enemy != null && !enemy.IsDead) enemy.TakeDamage(1000000f);
+        }
+    }
+
+    /// <summary>Hentikan wave sekarang, bersihkan musuh, lalu jeda singkat sebelum wave terakhir.</summary>
+    private void JumpToLastWave()
+    {
+        if (currentStage == null || TotalWaves == 0 || state == StageState.Victory || state == StageState.Defeat) return;
+        StopAllCoroutines();
+        runningSpawners = 0;
+        KillAllEnemies();
+        currentWaveIndex = TotalWaves - 2; // wave berikutnya = wave terakhir
+        HoldCountdown = false;
+        EnterState(StageState.Break, 3f);
+        Debug.Log($"[Debug] Lompat ke wave terakhir ({TotalWaves}/{TotalWaves}) dalam 3 detik");
     }
 
     public void LoadMainMenu()

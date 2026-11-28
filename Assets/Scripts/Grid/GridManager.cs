@@ -201,7 +201,10 @@ public class GridManager : MonoBehaviour
 
         // Kursor di atas UI (kartu tower, tombol, panel) -> jangan tembus ke grid
         bool overUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+        cursorTower = null;
+        if (paused || overUI) lastGroundCell = null;
         GridCell cellUnderCursor = (paused || overUI) ? null : GetCellUnderCursor();
+        UpdateTowerHighlight();
 
         // Hover biasa (tidak sedang menaruh / drag) pakai tile di TANAH, supaya area tower
         // hanya muncul saat kursor tepat di tile-nya, bukan saat lewat di atas badan sprite-nya.
@@ -406,6 +409,8 @@ public class GridManager : MonoBehaviour
 
     /// <summary>Tower paling depan di bawah kursor selain tower yang sedang di-drag (untuk pesan alasan).</summary>
     private Tower lastPointedTower;
+    private Tower cursorTower;
+    private Tower highlightedTower;
 
     /// <summary>
     /// Tile yang ditunjuk kursor untuk AKSI (klik, pasang, merge). Sprite tower yang tinggi bisa menutupi
@@ -442,6 +447,7 @@ public class GridManager : MonoBehaviour
         RaycastHit[] hits = Physics.RaycastAll(ray, raycastDistance, gridLayerMask, QueryTriggerInteraction.Ignore);
         if (hits.Length == 0)
         {
+            lastGroundCell = null; // kursor di luar arena: hover lama tidak boleh tertinggal
             return null;
         }
 
@@ -506,14 +512,21 @@ public class GridManager : MonoBehaviour
             mergeTarget = NearestMergeTargetOnScreen(mergeData, mousePosition);
         }
 
+        // Hover biasa: tower dipilih dari PANGKALNYA (tile di bawah kursor), bukan badan sprite,
+        // supaya tower di belakang tower lain tetap bisa dipilih. Badan sprite hanya cadangan.
+        Tower groundTower = ground != null ? ground.OccupyingTower : null;
+        cursorTower = mergeData != null ? mergeTarget : (groundTower != null ? groundTower : null);
+
         if (mergeData != null)
         {
             lastGroundCell = ground;
             return mergeTarget != null ? mergeTarget.OccupiedCell : ground;
         }
 
-        // Klik biasa: tower paling depan di bawah kursor, kalau tidak ada pakai tile tanah
+        // Klik biasa: tile tanah di bawah kursor (pangkal tower). Badan sprite dipakai
+        // hanya kalau tile di bawah kursor kosong (misal klik puncak tower yang tinggi).
         lastGroundCell = ground;
+        if (groundTower != null) return ground;
         return towerHit != null ? towerHit.OccupiedCell : ground;
     }
 
@@ -550,6 +563,16 @@ public class GridManager : MonoBehaviour
         Vector2 ab = b - a;
         float t = ab.sqrMagnitude > 0.0001f ? Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab.sqrMagnitude) : 0f;
         return (a + ab * t - p).sqrMagnitude;
+    }
+
+    /// <summary>Tower di bawah kursor diberi garis tepi putih (tower yang sedang di-drag tidak).</summary>
+    private void UpdateTowerHighlight()
+    {
+        Tower target = cursorTower != null && cursorTower != dragSource ? cursorTower : null;
+        if (target == highlightedTower) return;
+        if (highlightedTower != null) highlightedTower.SetHighlight(false);
+        highlightedTower = target;
+        if (highlightedTower != null) highlightedTower.SetHighlight(true);
     }
 
     private void UpdateHover(GridCell cellUnderCursor)
@@ -979,6 +1002,7 @@ public class GridManager : MonoBehaviour
 
         newTower.Setup(targetCell, selectedTowerData, cellSize);
         targetCell.PlaceTower(newTower);
+        AudioManager.TowerPlaced();
         return true;
     }
 

@@ -2,8 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// Pengaturan pemain (menu Pause: SOUND & MUSIC), disimpan di PlayerPrefs.
-/// Level 0..6 sesuai 6 daun di UI. Sound langsung mengatur volume global (AudioListener);
-/// Music disimpan untuk AudioManager/musik latar nanti (aset audio belum ada).
+/// Level 0..6 sesuai 6 daun di UI. SOUND = volume efek suara, MUSIC = volume musik (dipakai AudioManager).
 /// </summary>
 public static class GameSettings
 {
@@ -48,9 +47,24 @@ public static class GameSettings
         Apply();
     }
 
+    // Sebelum ada musik, slider MUSIC belum berpengaruh apa-apa sehingga bisa tersimpan di level kecil
+    // tanpa disadari. Sekali saja: kembalikan MUSIC ke penuh begitu musik pertama kali ada.
+    private const string AudioVersionKey = "settings.audioVersion";
+    private const int AudioVersion = 1;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void MigrateAudioSettings()
+    {
+        if (PlayerPrefs.GetInt(AudioVersionKey, 0) >= AudioVersion) return;
+        PlayerPrefs.SetInt(MusicKey, MaxLevel);
+        PlayerPrefs.SetInt(AudioVersionKey, AudioVersion);
+        PlayerPrefs.Save();
+    }
+
     public static void Apply()
     {
-        AudioListener.volume = SoundVolume;
+        // Volume efek & musik diatur terpisah oleh AudioManager
+        AudioListener.volume = 1f;
         OnChanged?.Invoke();
     }
 }

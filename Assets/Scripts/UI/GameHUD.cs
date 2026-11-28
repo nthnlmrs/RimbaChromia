@@ -157,8 +157,8 @@ public class GameHUD : MonoBehaviour
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         TextMeshProUGUI debugHint = UIKit.ArtLabel("Debug Hint", root,
-            "Debug: F fire  X extinguish  P pause fire  N skip", 18f, TextAlignmentOptions.TopRight);
-        UIKit.Place(debugHint.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-36f, -150f), new Vector2(600f, 26f));
+            "Debug: F fire  X extinguish  P pause fire  N skip  K kill all  J last wave  F1-F4 stage", 18f, TextAlignmentOptions.TopRight);
+        UIKit.Place(debugHint.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-36f, -150f), new Vector2(900f, 26f));
         debugHint.alpha = 0.55f;
 #endif
 

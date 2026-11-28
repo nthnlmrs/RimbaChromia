@@ -184,7 +184,12 @@ public class StoryPlayer : MonoBehaviour
         bodyText.maxVisibleCharacters = 0;
         typed = 0f;
 
-        if (line.shake) shakeTimer = 0.45f;
+        if (line.shake)
+        {
+            shakeTimer = 0.45f;
+            AudioManager.Explosion(); // GDD: "(bunyi ledakan)"
+            AudioManager.StoryCue();  // musik gameplay mulai membangun setelah ledakan
+        }
     }
 
     // ------------------------------------------------------------------
@@ -258,6 +263,7 @@ public class StoryPlayer : MonoBehaviour
     private void End()
     {
         IsPlaying = false;
+        AudioManager.StoryFinished();
         Time.timeScale = previousTimeScale;
         Action callback = onFinished;
         onFinished = null;

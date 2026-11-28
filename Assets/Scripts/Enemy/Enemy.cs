@@ -320,6 +320,7 @@ public class Enemy : MonoBehaviour
                 // Ledakan Flame Director: api menyebar di area, tower sekitar tidak terluka
                 if (d.explosionArea != AreaPattern.None && d.explosionArea != AreaPattern.Single && gridManager != null)
                 {
+                    AudioManager.Explosion();
                     foreach (GridCell near in gridManager.GetCellsInArea(cell.Row, cell.Column, d.explosionArea))
                     {
                         fire.Ignite(near);

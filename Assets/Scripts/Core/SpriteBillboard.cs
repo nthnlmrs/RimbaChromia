@@ -16,6 +16,8 @@ public class SpriteBillboard : MonoBehaviour
 {
     private SpriteRenderer spriteRenderer;
     private SpriteRenderer shadowCaster;
+    private SpriteRenderer[] outline;
+    private bool outlined;
     private Transform contactShadow;
     private Camera cam;
     private MaterialPropertyBlock block;
@@ -196,6 +198,7 @@ public class SpriteBillboard : MonoBehaviour
         bool flip = faceRight != artFacesRight;
         if (spriteRenderer.flipX == flip) return;
         spriteRenderer.flipX = flip;
+        if (outline != null) foreach (SpriteRenderer o in outline) o.flipX = flip;
         if (shadowCaster != null) shadowCaster.flipX = flip;
     }
 
@@ -203,6 +206,7 @@ public class SpriteBillboard : MonoBehaviour
     {
         spriteRenderer.sprite = sprite;
         if (shadowCaster != null) shadowCaster.sprite = sprite;
+        if (outlined) RefreshOutline();
         ApplyLook();
         FitClickCollider();
     }
@@ -309,6 +313,56 @@ public class SpriteBillboard : MonoBehaviour
 
         // Sejajar bidang kamera -> tidak ada foreshortening (tidak gepeng)
         transform.rotation = cam.transform.rotation;
+    }
+
+    /// <summary>Garis tepi putih di sekeliling sprite (dipakai saat tower di-hover).</summary>
+    public void SetOutline(bool on)
+    {
+        if (outlined == on) return;
+        outlined = on;
+        if (on) RefreshOutline();
+        else if (outline != null) foreach (SpriteRenderer o in outline) o.enabled = false;
+    }
+
+    /// <summary>
+    /// Outline = sprite yang SAMA (mesh, pivot, flip identik) dengan tekstur siluet putih,
+    /// digeser 1 pixel ke kiri/kanan/atas/bawah tepat di belakang sprite asli.
+    /// </summary>
+    private void RefreshOutline()
+    {
+        Sprite sprite = spriteRenderer.sprite;
+        Texture2D silhouette = sprite != null ? SpriteOutline.Silhouette(sprite.texture) : null;
+        Material cutout = SpriteMaterials.Cutout;
+        if (silhouette == null || cutout == null) return;
+
+        float px = 1f / sprite.pixelsPerUnit;
+        if (outline == null)
+        {
+            Vector2[] dirs = { Vector2.left, Vector2.right, Vector2.up, Vector2.down };
+            outline = new SpriteRenderer[dirs.Length];
+            for (int i = 0; i < dirs.Length; i++)
+            {
+                GameObject go = new GameObject("Outline");
+                go.transform.SetParent(transform, false);
+                go.transform.localPosition = new Vector3(dirs[i].x * px, dirs[i].y * px, 0.004f); // di belakang sprite (menjauhi kamera)
+                SpriteRenderer o = go.AddComponent<SpriteRenderer>();
+                o.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                o.receiveShadows = false;
+                o.sharedMaterial = cutout;
+                outline[i] = o;
+            }
+        }
+
+        foreach (SpriteRenderer o in outline)
+        {
+            o.sprite = sprite;
+            o.flipX = spriteRenderer.flipX;
+            o.GetPropertyBlock(block);
+            block.SetTexture(BaseMapId, silhouette);
+            block.SetColor(BaseColorId, Color.white);
+            o.SetPropertyBlock(block);
+            o.enabled = true;
+        }
     }
 
     private void OnDestroy()
