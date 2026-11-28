@@ -15,9 +15,12 @@ MonoBehaviour:
   menuMusic: {fileID: 8300000, guid: 4823685bd0535c7ce9b70c0a74230440, type: 3}
   gameplayMusic: {fileID: 8300000, guid: 5095492f22b6fa81116f5d869319a251, type: 3}
   musicVolume: 0.7
+  menuMusicVolume: 1
   forestAmbience: {fileID: 8300000, guid: 19c4f3d788798fc44bbb7805a087c498, type: 3}
-  ambienceVolume: 0.35
+  ambienceVolume: 0.2
+  menuAmbienceVolume: 0.08
   buttonClick: {fileID: 8300000, guid: cd2eab8f177d74bd45e598c0b204cc29, type: 3}
+  cardSelect: {fileID: 8300000, guid: 2c7844937f1a4c748be3124d8414bdca, type: 3}
   towerHover: {fileID: 8300000, guid: 3a184c92336ddd948b3cdb9eab892b3d, type: 3}
   invalidPlace: {fileID: 8300000, guid: 3cabed21b00456743a8cc5ab3655aeed, type: 3}
   typing: {fileID: 8300000, guid: ce7e946e7a3fbd74482e891673477c9d, type: 3}
@@ -31,13 +34,14 @@ MonoBehaviour:
   blueSplash: {fileID: 8300000, guid: 8e1fbae93ad8bd4bc21dd2383d0335e5, type: 3}
   explosion: {fileID: 8300000, guid: 12c43a29a942a799c589f024a4c41895, type: 3}
   purpleAttack: {fileID: 8300000, guid: 73580995dd6cad8479b5327d3fb684f8, type: 3}
-  shieldHit: {fileID: 8300000, guid: 05f56a6ff137d634c87b50f4526d3b04, type: 3}
+  shieldUp: {fileID: 8300000, guid: 05f56a6ff137d634c87b50f4526d3b04, type: 3}
+  towerVanish: {fileID: 8300000, guid: ee1b25b53b86792419265a64d7e6b170, type: 3}
   enemyStep: {fileID: 8300000, guid: 36b935f6a90bf3a44937fb92ca6ad82f, type: 3}
   enemyDeath: {fileID: 8300000, guid: 144d5a8849c10044dbdee06e9db7ee9a, type: 3}
   fireIgnite: {fileID: 8300000, guid: 9fa789c962a964b9e8b65397f6429a41, type: 3}
   fireOut: {fileID: 8300000, guid: e53a2b0127e6428d12b40510b26c556a, type: 3}
   wallHit: {fileID: 8300000, guid: 219ba70081b3601a56af50f5ad2b2d4a, type: 3}
-  waveStart: {fileID: 8300000, guid: 2f38007a450ed257be8201b733465253, type: 3}
+  waveStart: {fileID: 8300000, guid: 1265287644b131e44a541c2e4785bb92, type: 3}
   victory: {fileID: 8300000, guid: 02cb9c649cfd9ca14400be631ca2b7c5, type: 3}
   defeat: {fileID: 8300000, guid: af9fcaa45ffafff136dd07bd296a2352, type: 3}
   uiVolume: 0.7
@@ -46,5 +50,5 @@ MonoBehaviour:
   fireVolume: 0.45
   enemyVolume: 0.55
   stepVolume: 0.25
-  typingVolume: 0.35
+  typingVolume: 0.6
   jingleVolume: 0.9

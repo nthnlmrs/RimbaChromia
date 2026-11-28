@@ -11,15 +11,14 @@ Sound effects (Pixabay):
 - Explosion - https://pixabay.com/sound-effects/film-special-effects-bomb-explosion-1-381972/
 - FIre Out - https://pixabay.com/sound-effects/film-special-effects-fire-extinguishing-212651/
 - On FIre - https://pixabay.com/sound-effects/fire-sound-efftect-21991/
-- Start Wave - https://pixabay.com/sound-effects/musical-trumpets-47123/
 - Victory - https://pixabay.com/sound-effects/musical-tada-fanfare-a-6313/
 - Wall Hit - https://pixabay.com/sound-effects/film-special-effects-brick-falling-100572/
 
 Original SFX (team): Merge Tower, Blue Shoot, Blue Splash, Tower Placed
 
 Added SFX (team, 2026-11-28):
-- forest-ambience (gameplay ambience), typing (dialogue), countdown1-3 (3-2-1 before a wave)
-- hover-tower, invalid-place, purple-tower-attack, shiled-tower (Red blocks a hit)
+- wave-mulai (wave start), forest-ambience (gameplay ambience), typing (dialogue), countdown1-3 (3-2-1 before a wave)
+- hover-tower, select-card-tower, invalid-place, purple-tower-attack
+- shiled-tower (Red immunity after merge), tower-vanish (tower destroyed)
 - af-walk (enemy footsteps), enemy-death
 - ember-bot-attack, fire-attack (Fire Spitter), pyro-shooter, wf-attack (Walking Furnace)
-- tower-runtuh: not used yet

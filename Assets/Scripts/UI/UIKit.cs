@@ -115,6 +115,7 @@ public static class UIKit
         colors.selectedColor = Color.white;
         colors.colorMultiplier = 1.2f;
         button.colors = colors;
+        ButtonDarken.Add(button);
 
         button.onClick.AddListener(AudioManager.Click);
         if (onClick != null) button.onClick.AddListener(onClick);
@@ -263,6 +264,8 @@ public static class UIKit
             colors.selectedColor = Color.white;
             button.colors = colors;
         }
+        // Semua tombol menggelap saat disorot; tombol dengan gambar "ditekan" sudah berganti gambar saat diklik
+        ButtonDarken.Add(button, darkenOnPress: pressed == null);
 
         button.onClick.AddListener(AudioManager.Click);
         if (onClick != null) button.onClick.AddListener(onClick);
@@ -298,5 +301,78 @@ public static class UIKit
     public static string Hex(Color c)
     {
         return "#" + ColorUtility.ToHtmlStringRGB(c);
+    }
+}
+
+/// <summary>
+/// Umpan balik tombol: menggelap dari warna aslinya saat disorot, lebih gelap saat ditekan.
+/// Mode overlay: untuk tombol transparan di atas gambar panel, area tombol ditutup bayangan gelap tipis.
+/// </summary>
+public class ButtonDarken : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler
+{
+    public const float HoverShade = 0.82f;
+    public const float PressShade = 0.66f;
+
+    public Graphic target;
+    public bool overlay;
+    public bool darkenOnPress = true;
+
+    private Selectable selectable;
+    private bool hovered;
+    private bool pressed;
+    private bool darkened;
+    private Color baseColor;
+
+    public static ButtonDarken Add(Selectable button, bool overlay = false, bool darkenOnPress = true)
+    {
+        ButtonDarken d = button.gameObject.GetComponent<ButtonDarken>();
+        if (d == null) d = button.gameObject.AddComponent<ButtonDarken>();
+        d.target = button.targetGraphic;
+        d.overlay = overlay;
+        d.darkenOnPress = darkenOnPress;
+        if (button.transition == Selectable.Transition.ColorTint) button.transition = Selectable.Transition.None;
+        return d;
+    }
+
+    private void Awake()
+    {
+        selectable = GetComponent<Selectable>();
+    }
+
+    public void OnPointerEnter(PointerEventData e) { hovered = true; Apply(); }
+    public void OnPointerExit(PointerEventData e) { hovered = false; pressed = false; Apply(); }
+    public void OnPointerDown(PointerEventData e) { pressed = true; Apply(); }
+    public void OnPointerUp(PointerEventData e) { pressed = false; Apply(); }
+
+    private void OnDisable()
+    {
+        hovered = false;
+        pressed = false;
+        Apply();
+    }
+
+    private void Apply()
+    {
+        if (target == null) target = GetComponent<Graphic>();
+        if (target == null) return;
+
+        bool interactable = selectable == null || selectable.IsInteractable();
+        float shade = !interactable ? 1f
+            : pressed && darkenOnPress ? PressShade
+            : hovered || pressed ? HoverShade
+            : 1f;
+
+        if (shade >= 1f)
+        {
+            if (darkened) target.color = baseColor; // kembali ke warna asli
+            darkened = false;
+            return;
+        }
+
+        if (!darkened) baseColor = target.color; // warna asli diambil saat mulai menggelap (bisa diubah kode lain sebelumnya)
+        darkened = true;
+        target.color = overlay
+            ? new Color(0f, 0f, 0f, (1f - shade) * 0.9f)
+            : new Color(baseColor.r * shade, baseColor.g * shade, baseColor.b * shade, baseColor.a);
     }
 }

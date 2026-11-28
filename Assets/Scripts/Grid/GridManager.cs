@@ -568,16 +568,29 @@ public class GridManager : MonoBehaviour
     }
 
     /// <summary>Tower di bawah kursor diberi garis tepi putih (tower yang sedang di-drag tidak).</summary>
+    private const float TowerHoverSoundDelay = 0.18f; // kursor cuma lewat sebentar = tanpa suara
+    private float towerHoverSince;
+    private bool towerHoverSoundPlayed;
+
     private void UpdateTowerHighlight()
     {
         Tower target = cursorTower != null && cursorTower != dragSource ? cursorTower : null;
-        if (target == highlightedTower) return;
+        if (target == highlightedTower)
+        {
+            if (target != null && !towerHoverSoundPlayed && Time.unscaledTime - towerHoverSince >= TowerHoverSoundDelay)
+            {
+                towerHoverSoundPlayed = true;
+                AudioManager.TowerHover();
+            }
+            return;
+        }
+        towerHoverSince = Time.unscaledTime;
+        towerHoverSoundPlayed = false;
         if (highlightedTower != null) highlightedTower.SetHighlight(false);
         highlightedTower = target;
         if (highlightedTower != null)
         {
             highlightedTower.SetHighlight(true);
-            AudioManager.TowerHover();
         }
     }
 

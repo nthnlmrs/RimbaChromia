@@ -11,14 +11,20 @@ public class AudioLibrary : ScriptableObject
     public AudioClip menuMusic;
     public AudioClip gameplayMusic;
     [Range(0f, 1f)] public float musicVolume = 0.7f;
+    [Tooltip("Volume musik main menu (juga dipakai di cerita pembuka sebelum ledakan)")]
+    [Range(0f, 1f)] public float menuMusicVolume = 1f;
 
     [Header("Ambience (diputar berulang di bawah musik)")]
     [Tooltip("Suara hutan di gameplay")]
     public AudioClip forestAmbience;
-    [Range(0f, 1f)] public float ambienceVolume = 0.35f;
+    [Range(0f, 1f)] public float ambienceVolume = 0.2f;
+    [Tooltip("Ambience di main menu & selama cerita (lebih kecil dari gameplay)")]
+    [Range(0f, 1f)] public float menuAmbienceVolume = 0.08f;
 
     [Header("UI")]
     public AudioClip buttonClick;
+    [Tooltip("Memilih kartu tower di bar bawah (klik / mulai drag)")]
+    public AudioClip cardSelect;
     [Tooltip("Kursor menyorot kartu tower / tower terpasang")]
     public AudioClip towerHover;
     [Tooltip("Tower tidak bisa dipasang / merge ditolak")]
@@ -39,8 +45,10 @@ public class AudioLibrary : ScriptableObject
     public AudioClip explosion;
     [Tooltip("Purple menyerang (AoE)")]
     public AudioClip purpleAttack;
-    [Tooltip("Red (Barrier) menahan serangan musuh")]
-    public AudioClip shieldHit;
+    [Tooltip("Red jadi kebal beberapa detik setelah merge")]
+    public AudioClip shieldUp;
+    [Tooltip("Tower kehabisan HP dan lenyap")]
+    public AudioClip towerVanish;
 
     [Header("Musuh (suara serangan per musuh diatur di EnemyData > Attack Sound)")]
     [Tooltip("Langkah kaki musuh (dibatasi supaya tidak bising saat musuh banyak)")]
@@ -66,6 +74,6 @@ public class AudioLibrary : ScriptableObject
     [Range(0f, 1f)] public float fireVolume = 0.45f;
     [Range(0f, 1f)] public float enemyVolume = 0.55f;
     [Range(0f, 1f)] public float stepVolume = 0.25f;
-    [Range(0f, 1f)] public float typingVolume = 0.35f;
+    [Range(0f, 1f)] public float typingVolume = 0.6f;
     [Range(0f, 1f)] public float jingleVolume = 0.9f;
 }

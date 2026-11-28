@@ -525,6 +525,7 @@ public class Tower : MonoBehaviour
         {
             immuneTimer = data.mergeImmunityDuration;
             ApplyVisual();
+            AudioManager.ShieldUp();
         }
 
         // Yellow: insight instan
@@ -551,8 +552,6 @@ public class Tower : MonoBehaviour
             return;
         }
 
-        // Red (Barrier) menahan pukulan: bunyi perisai, juga saat kebal setelah merge
-        if (data != null && data.role == TowerRole.Barrier) AudioManager.ShieldHit();
         if (IsImmune)
         {
             return;
@@ -585,8 +584,16 @@ public class Tower : MonoBehaviour
             occupiedCell.RemoveTower();
         }
 
-        TowerVfx.Pulse(transform.position, cellSize, new Color(0.2f, 0.2f, 0.2f), 0.4f);
-        PixelVfx.Burst(transform.position + Vector3.up * 0.5f, PixelArt.BurstStyle.Smoke, Color.gray, 1.5f);
+        // Lenyap: sprite dilepas dari tower lalu menghilang sendiri (kedip, gepeng, memanjang ke atas jadi debu pixel)
+        Color color = data != null ? TowerVfx.ColorOf(data.color) : Color.white;
+        AudioManager.TowerVanish();
+        if (billboard != null)
+        {
+            billboard.Vanish(color);
+            billboard = null;
+        }
+        TowerVfx.Pulse(transform.position, cellSize * 1.2f, color, 0.4f);
+        PixelVfx.Burst(transform.position + Vector3.up * 0.3f, PixelArt.BurstStyle.Smoke, Color.gray, 1.1f);
         OnTowerDestroyed?.Invoke(this);
         Destroy(gameObject);
     }

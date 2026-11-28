@@ -276,7 +276,7 @@ public class Enemy : MonoBehaviour
         if (IsDead) yield break;
 
         Vector3 launch = transform.position + Vector3.up * (VisualHeight * 0.6f);
-        AudioManager.EnemyAttack(data != null ? data.attackSound : null);
+        if (AttackAnimLength <= 0f) PlayAttackSound(); // tanpa animasi serang: bunyi saat proyektil keluar
         foreach (LaunchOrder order in orders)
         {
             LaunchAt(launch, order.cell, order.tower);
@@ -306,6 +306,8 @@ public class Enemy : MonoBehaviour
 
         TowerVfx.Lob(launch, landing, d.projectileColor, d.projectileFlightTime, () =>
         {
+            if (d.attackSoundOnImpact) AudioManager.EnemyAttack(d.attackSound); // mis. batu Walking Furnace menghantam tanah
+
             // Tower kena damage kalau masih berdiri di tile itu
             if (towerTarget != null && towerTarget.OccupiedCell == cell)
             {
@@ -422,7 +424,7 @@ public class Enemy : MonoBehaviour
         Vector3 destination = new Vector3(cellPos.x, targetCell.SurfaceY + heightOffset, cellPos.z);
         FaceTowards(destination);
         movedThisFrame = true;
-        AudioManager.EnemyStep(); // dibatasi global, jadi tidak menumpuk walau musuh banyak
+        if (Time.deltaTime > 0f) AudioManager.EnemyStep(); // tidak bunyi saat dijeda; dibatasi global supaya tidak menumpuk
         transform.position = Vector3.MoveTowards(
             transform.position,
             destination,
@@ -447,7 +449,7 @@ public class Enemy : MonoBehaviour
         }
 
         attackTimer = 0f;
-        AudioManager.EnemyAttack(data != null ? data.attackSound : null);
+        if (AttackAnimLength <= 0f) PlayAttackSound(); // tanpa animasi serang: bunyi saat pukulan kena
         tower.TakeDamage(attackDamage);
     }
 
@@ -461,7 +463,7 @@ public class Enemy : MonoBehaviour
         }
 
         attackTimer = 0f;
-        AudioManager.EnemyAttack(data != null ? data.attackSound : null);
+        if (AttackAnimLength <= 0f) PlayAttackSound();
 
         if (wallHealth != null)
         {
@@ -510,6 +512,13 @@ public class Enemy : MonoBehaviour
     {
         if (AttackAnimLength <= 0f) return;
         attackAnimTimer = AttackAnimLength;
+        PlayAttackSound(); // bunyi tepat saat musuh mulai menyerang
+    }
+
+    /// <summary>Suara serangan (kecuali yang diputar saat lemparan mendarat, mis. Walking Furnace).</summary>
+    private void PlayAttackSound()
+    {
+        if (data != null && !data.attackSoundOnImpact) AudioManager.EnemyAttack(data.attackSound);
     }
 
     /// <summary>Serangan jarak dekat: animasi dimulai lebih awal supaya pukulan pas di akhir animasi.</summary>

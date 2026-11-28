@@ -293,9 +293,71 @@ public class SpriteBillboard : MonoBehaviour
         }
     }
 
+    // ------------------------------------------------------------------
+    // Lenyap (tower kehabisan HP)
+    // ------------------------------------------------------------------
+
+    private bool vanishing;
+
+    /// <summary>
+    /// Sprite dilepas dari pemiliknya (pemilik boleh langsung di-Destroy) lalu menghilang sendiri:
+    /// kedip putih + gepeng sebentar, memanjang ke atas sambil memudar, lalu pecah jadi debu pixel berwarna.
+    /// </summary>
+    public void Vanish(Color color)
+    {
+        if (vanishing) return;
+        vanishing = true;
+        SetOutline(false);
+        if (clickCollider != null) clickCollider.enabled = false;
+        if (shadowCaster != null) shadowCaster.enabled = false;
+        if (contactShadow != null) contactShadow.gameObject.SetActive(false);
+        transform.SetParent(null, true);
+        StartCoroutine(VanishRoutine(color));
+    }
+
+    private System.Collections.IEnumerator VanishRoutine(Color color)
+    {
+        float baseScale = displayScale;
+        Vector3 start = transform.position;
+        float height = VisualHeight;
+
+        // 1) Kedip putih terang + gepeng (antisipasi)
+        const float squash = 0.12f;
+        for (float t = 0f; t < squash; t += Time.deltaTime)
+        {
+            float k = t / squash;
+            SetColor(Color.Lerp(Color.white, new Color(1.6f, 1.6f, 1.6f, 1f), k));
+            transform.localScale = new Vector3(baseScale * (1f + 0.25f * k), baseScale * (1f - 0.2f * k), baseScale);
+            yield return null;
+        }
+
+        // Debu pixel warna tower terlempar + kilau naik
+        Vector3 middle = start + Vector3.up * height * 0.5f;
+        PixelVfx.Debris(middle, color, 12, 1.2f);
+        PixelVfx.Sparkles(middle, color, 7, 0.35f, 1.3f);
+
+        // 2) Memanjang ke atas, menipis, memudar ke warna tower
+        const float rise = 0.35f;
+        for (float t = 0f; t < rise; t += Time.deltaTime)
+        {
+            float k = t / rise;
+            float ease = k * k;
+            Color c = Color.Lerp(Color.white, color, k);
+            c.a = 1f - ease;
+            SetColor(c);
+            transform.localScale = new Vector3(baseScale * Mathf.Lerp(1.25f, 0.1f, ease), baseScale * Mathf.Lerp(0.8f, 1.5f, ease), baseScale);
+            transform.position = start + Vector3.up * ease * 0.35f;
+            yield return null;
+        }
+
+        PixelVfx.Sparkles(start + Vector3.up * height, color, 4, 0.15f, 1.6f);
+        Destroy(gameObject);
+    }
+
     private void LateUpdate()
     {
         FaceCamera();
+        if (vanishing) return;
 
         float dt = Time.deltaTime;
         if (popTimer > 0f) popTimer = Mathf.Max(0f, popTimer - dt);

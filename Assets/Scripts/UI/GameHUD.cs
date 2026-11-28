@@ -134,9 +134,10 @@ public class GameHUD : MonoBehaviour
         toastText.gameObject.SetActive(false);
         if (grid != null) grid.OnActionRejected += ShowToast;
 
+        RectTransform cardBar = null;
         if (grid != null)
         {
-            RectTransform cardBar = UIKit.Rect("Tower Cards", root);
+            cardBar = UIKit.Rect("Tower Cards", root);
             cardBar.gameObject.AddComponent<TowerCardBar>().Build(grid, root);
 
             RectTransform info = UIKit.Rect("Tower Info", root);
@@ -148,6 +149,8 @@ public class GameHUD : MonoBehaviour
         {
             RectTransform guide = UIKit.Rect("Tutorial Guide", root);
             guide.gameObject.AddComponent<TutorialGuide>().Build(waves, grid);
+            // Di belakang kartu tower & panel deskripsinya: kartu yang naik saat disorot tidak tertutup papan Taduh
+            if (cardBar != null) guide.SetSiblingIndex(cardBar.GetSiblingIndex());
         }
 
         TextMeshProUGUI controls = UIKit.ArtLabel("Controls Hint", root,

@@ -9,6 +9,7 @@ using UnityEngine.SceneManagement;
 /// - Efek suara dipanggil dari mana saja: AudioManager.Play(lib => lib.towerPlaced).
 ///   Suara yang sama dibatasi jaraknya (tidak menumpuk saat banyak tower menembak bersamaan).
 /// - Volume mengikuti menu Settings: SOUND untuk efek, MUSIC untuk musik.
+/// - Hening di awal klip efek suara dipotong otomatis saat start, jadi suara langsung terdengar saat dipanggil.
 /// Klip diatur di Assets/Resources/AudioLibrary.asset.
 /// </summary>
 public class AudioManager : MonoBehaviour
@@ -32,7 +33,9 @@ public class AudioManager : MonoBehaviour
     private Coroutine musicRoutine;
     private readonly Dictionary<AudioClip, float> lastPlayed = new Dictionary<AudioClip, float>();
     private bool waitingForStoryCue;
-    private float fadeInDuration = MusicFade;
+    private bool introPending;
+    private Coroutine introRoutine;
+    private readonly Dictionary<AudioClip, AudioClip> trimmed = new Dictionary<AudioClip, AudioClip>();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStaticsOnPlay()
@@ -92,6 +95,8 @@ public class AudioManager : MonoBehaviour
         typingSource.spatialBlend = 0f;
         typingSource.ignoreListenerPause = true;
 
+        PrepareLibraryClips();
+
         GameSettings.OnChanged += ApplyVolume;
         SceneManager.sceneLoaded += OnSceneLoaded;
         ApplyVolume();
@@ -109,30 +114,52 @@ public class AudioManager : MonoBehaviour
     {
         if (library == null) return;
         waitingForStoryCue = false;
+        introPending = false;
         SetTyping(false);
+        if (introRoutine != null) StopCoroutine(introRoutine);
+        introRoutine = null;
         if (scene.name == MainMenuScene)
         {
-            ambienceTarget = 0f;
+            ambienceTarget = library.menuAmbienceVolume;
             PlayMusic(library.menuMusic);
             return;
         }
-        ambienceTarget = 1f;
-        StartCoroutine(StartGameplayMusicAfterIntroCheck());
+        ambienceTarget = library.ambienceVolume;
+        introPending = true;
+        introRoutine = StartCoroutine(StartGameplayMusicUnlessIntro());
     }
 
     /// <summary>
-    /// Scene stage: tunggu 1 frame (WaveManager memulai cerita di Start). Kalau cerita pembuka sedang
-    /// diputar, musik menu dibiarkan dan musik gameplay baru masuk saat ledakan (StoryCue) / cerita selesai.
+    /// Scene stage: cerita pembuka baru dimulai setelah grid selesai dibuat (bisa lebih dari 1 frame).
+    /// Selama menunggu, musik yang sedang jalan dibiarkan. Kalau cerita mulai, StoryStarted yang mengatur musik;
+    /// kalau tidak ada cerita, musik gameplay masuk.
     /// </summary>
-    private IEnumerator StartGameplayMusicAfterIntroCheck()
+    private IEnumerator StartGameplayMusicUnlessIntro()
     {
-        yield return null;
-        if (StoryPlayer.IsPlaying)
+        float waited = 0f;
+        while (introPending && waited < 2f && !StoryPlayer.IsPlaying)
         {
-            waitingForStoryCue = true;
-            yield break;
+            waited += Time.unscaledDeltaTime;
+            yield return null;
         }
-        PlayMusic(library.gameplayMusic);
+        introRoutine = null;
+        if (!introPending) yield break; // cerita sudah mulai
+        introPending = false;
+        if (!StoryPlayer.IsPlaying) PlayMusic(library.gameplayMusic);
+    }
+
+    /// <summary>
+    /// Cerita dimulai (dipanggil StoryPlayer). Cerita pembuka stage: Gymnopedie diputar (atau diteruskan dari menu),
+    /// ambience dikecilkan, lalu musik gameplay masuk saat ledakan (StoryCue) / cerita selesai.
+    /// </summary>
+    public static void StoryStarted()
+    {
+        AudioManager m = Ensure();
+        if (!m.introPending || m.library == null) return;
+        m.introPending = false;
+        m.waitingForStoryCue = true;
+        m.ambienceTarget = m.library.menuAmbienceVolume;
+        m.PlayMusic(m.library.menuMusic);
     }
 
     /// <summary>Momen dramatis di cerita (baris bergetar / ledakan): musik gameplay mulai, makin lama makin keras.</summary>
@@ -141,6 +168,7 @@ public class AudioManager : MonoBehaviour
         AudioManager m = Ensure();
         if (!m.waitingForStoryCue || m.library == null) return;
         m.waitingForStoryCue = false;
+        m.ambienceTarget = m.library.ambienceVolume;
         m.PlayMusic(m.library.gameplayMusic, fadeIn: 7f, fadeOut: 0.6f);
     }
 
@@ -150,12 +178,14 @@ public class AudioManager : MonoBehaviour
         AudioManager m = Ensure();
         if (!m.waitingForStoryCue || m.library == null) return;
         m.waitingForStoryCue = false;
+        m.ambienceTarget = m.library.ambienceVolume;
         m.PlayMusic(m.library.gameplayMusic);
     }
 
     private void ApplyVolume()
     {
-        float musicBase = library != null ? library.musicVolume : 0.55f;
+        float musicBase = library == null ? 0.55f
+            : currentMusic != null && currentMusic == library.menuMusic ? library.menuMusicVolume : library.musicVolume;
         if (musicSource != null) musicSource.volume = musicBase * GameSettings.MusicVolume * musicFadeLevel;
         if (sfxSource != null) sfxSource.volume = GameSettings.SoundVolume;
         if (typingSource != null) typingSource.volume = (library != null ? library.typingVolume : 0.35f) * GameSettings.SoundVolume;
@@ -187,7 +217,7 @@ public class AudioManager : MonoBehaviour
     private void UpdateAmbience()
     {
         AudioClip clip = library != null ? library.forestAmbience : null;
-        ambienceLevel = Mathf.MoveTowards(ambienceLevel, clip != null ? ambienceTarget : 0f, Time.unscaledDeltaTime / 2f);
+        ambienceLevel = Mathf.MoveTowards(ambienceLevel, clip != null ? ambienceTarget : 0f, Time.unscaledDeltaTime * 0.15f);
         if (clip != null && ambienceLevel > 0.001f)
         {
             if (ambienceSource.clip != clip) ambienceSource.clip = clip;
@@ -197,7 +227,7 @@ public class AudioManager : MonoBehaviour
         {
             ambienceSource.Stop();
         }
-        ambienceSource.volume = ambienceLevel * (library != null ? library.ambienceVolume : 0.35f) * GameSettings.SoundVolume;
+        ambienceSource.volume = ambienceLevel * GameSettings.SoundVolume;
     }
 
     // ------------------------------------------------------------------
@@ -256,7 +286,7 @@ public class AudioManager : MonoBehaviour
     {
         AudioManager m = Ensure();
         if (m.library == null || pick == null) return;
-        AudioClip clip = pick(m.library);
+        AudioClip clip = m.Prepared(pick(m.library));
         if (clip == null) return;
 
         float now = Time.unscaledTime;
@@ -282,12 +312,18 @@ public class AudioManager : MonoBehaviour
     public static void FireOut() => Play(l => l.fireOut, Vol(l => l.fireVolume), 0.3f);
     public static void WallHit() => Play(l => l.wallHit, Vol(l => l.towerVolume), 0.7f);
     public static void WaveStart() => Play(l => l.waveStart, Vol(l => l.jingleVolume), 1f);
+    public static void CardSelect() => Play(l => l.cardSelect, Vol(l => l.uiVolume), 0.05f);
+    public static void ShieldUp() => Play(l => l.shieldUp, Vol(l => l.towerVolume), 0.2f);
+    public static void TowerVanish() => Play(l => l.towerVanish, Vol(l => l.towerVolume), 0.08f);
     public static void TowerHover() => Play(l => l.towerHover, Vol(l => l.uiVolume), 0.06f);
     public static void InvalidPlace() => Play(l => l.invalidPlace, Vol(l => l.uiVolume), 0.25f);
     public static void PurpleAttack() => Play(l => l.purpleAttack, Vol(l => l.shootVolume), 0.15f);
-    public static void ShieldHit() => Play(l => l.shieldHit, Vol(l => l.towerVolume), 0.3f);
     public static void EnemyDeath() => Play(l => l.enemyDeath, Vol(l => l.enemyVolume), 0.08f);
-    public static void EnemyStep() => Play(l => l.enemyStep, Vol(l => l.stepVolume), 0.4f);
+    public static void EnemyStep()
+    {
+        if (Time.timeScale <= 0f) return;
+        Play(l => l.enemyStep, Vol(l => l.stepVolume), 0.4f);
+    }
 
     /// <summary>Suara serangan khusus musuh (EnemyData.attackSound).</summary>
     public static void EnemyAttack(AudioClip clip)
@@ -308,7 +344,7 @@ public class AudioManager : MonoBehaviour
     {
         AudioManager m = instance;
         if (m == null || m.typingSource == null) return;
-        AudioClip clip = m.library != null ? m.library.typing : null;
+        AudioClip clip = m.Prepared(m.library != null ? m.library.typing : null);
         if (on && clip != null)
         {
             if (m.typingSource.clip != clip) m.typingSource.clip = clip;
@@ -330,5 +366,70 @@ public class AudioManager : MonoBehaviour
     {
         FadeOutMusic();
         Play(l => l.defeat, Vol(l => l.jingleVolume), 1f);
+    }
+
+    // ------------------------------------------------------------------
+    // Tanpa jeda di awal: hening di depan klip dipotong sekali saat start
+    // ------------------------------------------------------------------
+
+    /// <summary>Siapkan semua klip efek suara di AudioLibrary (musik, ambience & api dilewati: diputar berulang / streaming).</summary>
+    private void PrepareLibraryClips()
+    {
+        if (library == null) return;
+        foreach (System.Reflection.FieldInfo field in typeof(AudioLibrary).GetFields())
+        {
+            if (field.Name == nameof(AudioLibrary.menuMusic) || field.Name == nameof(AudioLibrary.gameplayMusic)
+                || field.Name == nameof(AudioLibrary.forestAmbience) || field.Name == nameof(AudioLibrary.fireIgnite)) continue;
+
+            if (field.FieldType == typeof(AudioClip)) Prepared((AudioClip)field.GetValue(library));
+            else if (field.FieldType == typeof(AudioClip[]) && field.GetValue(library) is AudioClip[] list)
+                foreach (AudioClip c in list) Prepared(c);
+        }
+    }
+
+    /// <summary>Versi klip tanpa hening di awal (dibuat sekali lalu disimpan). Klip yang tidak bisa dibaca dipakai apa adanya.</summary>
+    private AudioClip Prepared(AudioClip clip)
+    {
+        if (clip == null) return null;
+        if (trimmed.TryGetValue(clip, out AudioClip ready)) return ready;
+
+        if (clip.loadState != AudioDataLoadState.Loaded)
+        {
+            clip.LoadAudioData();
+            if (clip.loadState != AudioDataLoadState.Loaded) return clip; // belum siap: coba lagi lain kali
+        }
+
+        AudioClip result = TrimLeadingSilence(clip);
+        trimmed[clip] = result;
+        return result;
+    }
+
+    private static AudioClip TrimLeadingSilence(AudioClip clip)
+    {
+        int channels = Mathf.Max(1, clip.channels);
+        int frames = clip.samples;
+        if (frames <= 0 || clip.loadType == AudioClipLoadType.Streaming) return clip;
+
+        float[] data = new float[frames * channels];
+        if (!clip.GetData(data, 0)) return clip;
+
+        float peak = 0f;
+        for (int i = 0; i < data.Length; i++) peak = Mathf.Max(peak, Mathf.Abs(data[i]));
+        if (peak <= 0f) return clip;
+
+        float threshold = Mathf.Max(0.003f, peak * 0.03f);
+        int first = 0;
+        while (first < data.Length && Mathf.Abs(data[first]) < threshold) first++;
+
+        int startFrame = first / channels - clip.frequency / 500; // sisakan 2 ms supaya tidak bunyi "klik"
+        if (startFrame < clip.frequency / 200) return clip;        // hening < 5 ms: tidak perlu dipotong
+
+        int newFrames = frames - startFrame;
+        float[] cut = new float[newFrames * channels];
+        System.Array.Copy(data, startFrame * channels, cut, 0, cut.Length);
+
+        AudioClip result = AudioClip.Create(clip.name, newFrames, channels, clip.frequency, false);
+        result.SetData(cut, 0);
+        return result;
     }
 }

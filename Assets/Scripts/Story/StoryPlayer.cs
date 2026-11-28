@@ -76,6 +76,7 @@ public class StoryPlayer : MonoBehaviour
         previousTimeScale = Time.timeScale;
         Time.timeScale = 0f;
         fade = 0f;
+        AudioManager.StoryStarted();
         ShowLine(0);
     }
 

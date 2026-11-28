@@ -310,6 +310,8 @@ public class MainMenu : MonoBehaviour
         UIKit.PlaceOnArt(hit.rectTransform, pixelCenter, new Vector2(303f, 129f));
         Button button = hit.gameObject.AddComponent<Button>();
         button.targetGraphic = hit;
+        button.transition = Selectable.Transition.None;
+        ButtonDarken.Add(button, overlay: true); // area tombol di gambar panel ikut menggelap
         button.onClick.AddListener(AudioManager.Click);
         button.onClick.AddListener(onClick);
 

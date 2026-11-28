@@ -44,6 +44,8 @@ public class EnemyData : ScriptableObject
     [Header("Suara")]
     [Tooltip("Diputar setiap kali musuh menyerang (pukul / lempar / sembur). Kosong = tanpa suara")]
     public AudioClip attackSound;
+    [Tooltip("Centang: suara diputar saat lemparan MENDARAT (mis. batu Walking Furnace), bukan saat dilempar")]
+    public bool attackSoundOnImpact = false;
 
     [Header("Visual 2D (GDD: musuh = sprite 2D)")]
     [Tooltip("Sprite dari artist (pivot tengah-bawah, 64 PPU). Kosong = sprite placeholder berwarna")]

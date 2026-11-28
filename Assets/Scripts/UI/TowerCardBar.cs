@@ -143,14 +143,13 @@ public class TowerCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler,
     public void OnPointerEnter(PointerEventData eventData)
     {
         IsHovered = true;
-        AudioManager.TowerHover();
+        AudioManager.CardSelect();
     }
     public void OnPointerExit(PointerEventData eventData) => IsHovered = false;
 
     public void OnPointerClick(PointerEventData eventData)
     {
         if (dragging || Time.timeScale <= 0f || eventData.button != PointerEventData.InputButton.Left) return;
-        AudioManager.Click();
 
         // Klik kartu yang sedang dipilih = batal
         if (IsSelected) grid.CancelPlacement();
