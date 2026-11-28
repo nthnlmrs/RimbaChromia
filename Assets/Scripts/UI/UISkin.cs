@@ -49,11 +49,26 @@ public class UISkin : ScriptableObject
     public WavePlateArt[] wavePlates = new WavePlateArt[0];
 
     [Header("Main menu (tombol kayu polos & papan judul; teks ditulis kode)")]
+    [Tooltip("Gambar latar layar penuh (1920x1080). Kosong = latar hutan 3D")]
+    public Sprite menuBackground;
+    public Sprite menuLogo;
+    [Tooltip("Karakter di pojok main menu (Taduh)")]
+    public Sprite menuCharacter;
     public Sprite menuButtonOrange;
     public Sprite menuButtonRed;
     public Sprite menuTitleSign;
     [Tooltip("Panel settings 795x629 (seperti panel pause, tanpa judul & teks tombol)")]
     public Sprite menuSettingsPanel;
+
+    [Header("Dialog (visual novel & tutorial)")]
+    [Tooltip("Kotak dialog narasi / pembicara lain (980x235)")]
+    public Sprite storyDialogueBar;
+    [Tooltip("Kotak dialog Taduh: kotak 980x235 di pixel (187,135) + potret & nama Taduh (1167x506)")]
+    public Sprite storyTaduhBar;
+    [Tooltip("Papan kayu panduan Taduh saat gameplay (1167x293)")]
+    public Sprite tutorialTaduhBar;
+    [Tooltip("Latar cerita bawaan kalau baris dialog tidak punya CG")]
+    public Sprite storyBackground;
 
     [Header("Layar akhir")]
     public Sprite victoryBanner;

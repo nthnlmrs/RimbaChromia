@@ -7,7 +7,6 @@ using UnityEngine.UI;
 /// <summary>
 /// Pemutar visual novel (overlay layar penuh, dibangun lewat kode).
 ///  - Teks muncul huruf per huruf; klik / Spasi / Enter = lanjut (atau langsung tampilkan teks penuh)
-///  - Tombol "Lewati" untuk melewati seluruh adegan
 ///  - CG per baris (atau warna latar placeholder), efek getar untuk ledakan, fade masuk/keluar
 ///  - Game di-pause selama cerita (Time.timeScale = 0), dikembalikan setelah selesai
 /// Pemakaian: StoryPlayer.Play(dialogue, () => { ...lanjut gameplay... });
@@ -24,6 +23,7 @@ public class StoryPlayer : MonoBehaviour
 
     private const float CharsPerSecond = 45f;
     private const float FadeDuration = 0.35f;
+    private static readonly Vector2 ArrowRest = new Vector2(-56f, 40f);
 
     private DialogueData dialogue;
     private Action onFinished;
@@ -36,7 +36,15 @@ public class StoryPlayer : MonoBehaviour
     private GameObject nameTag;
     private TextMeshProUGUI nameText;
     private TextMeshProUGUI bodyText;
-    private TextMeshProUGUI continueHint;
+    private RectTransform continueArrow;
+    private Image plainBar;
+    private Image taduhBar;
+
+    // Kotak dialog dari artist: 980x235 px, diperbesar supaya pas layar 1920x1080
+    private const float BarScale = 1.33f;
+    private static readonly Vector2 BarPixels = new Vector2(980f, 235f);
+    // Posisi kotak di dalam gambar "Taduh Dialogue Bar" (1167x506) & posisi teks
+    private static readonly Vector2 TaduhBarOffset = new Vector2(187f, 135f);
 
     private int lineIndex = -1;
     private float typed;
@@ -96,28 +104,53 @@ public class StoryPlayer : MonoBehaviour
         advance.transition = Selectable.Transition.None;
         advance.onClick.AddListener(Advance);
 
-        // Kotak dialog
-        Image box = UIKit.Panel("Dialogue Box", shakeRoot, new Color(0.05f, 0.08f, 0.06f, 0.9f), false);
-        UIKit.Place(box.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 40f), new Vector2(1500f, 250f));
+        // Kotak dialog (art: kotak gelap transparan; khusus Taduh ada potret & namanya)
+        UISkin skin = UISkin.Current;
+        Vector2 barSize = BarPixels * BarScale;
+        RectTransform box = UIKit.Rect("Dialogue Box", shakeRoot);
+        UIKit.Place(box, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 60f), barSize);
 
-        Image border = UIKit.Panel("Border", box.transform, UIKit.Accent, false);
-        UIKit.Place(border.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(1500f, 4f));
+        plainBar = UIKit.Panel("Bar", box, new Color(0f, 0f, 0f, 0.5f), false);
+        if (skin != null && skin.storyDialogueBar != null) { plainBar.sprite = skin.storyDialogueBar; plainBar.color = Color.white; }
+        UIKit.Stretch(plainBar.rectTransform);
 
-        Image tag = UIKit.Panel("Name Tag", box.transform, UIKit.ButtonColor, false);
-        UIKit.Place(tag.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0f), new Vector2(40f, 0f), new Vector2(260f, 50f));
+        if (skin != null && skin.storyTaduhBar != null)
+        {
+            taduhBar = UIKit.ArtImage("Taduh Bar", box, skin.storyTaduhBar, BarScale);
+            RectTransform t = taduhBar.rectTransform;
+            t.anchorMin = t.anchorMax = new Vector2(0f, 1f);
+            t.pivot = new Vector2(0f, 1f);
+            t.anchoredPosition = new Vector2(-TaduhBarOffset.x, TaduhBarOffset.y) * BarScale;
+        }
+
+        // Nama pembicara selain Taduh (nama Taduh sudah ada di gambarnya)
+        Image tag = UIKit.Panel("Name Tag", box, new Color(0f, 0f, 0f, 0f), false);
+        UIKit.Place(tag.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(60f, -22f), new Vector2(500f, 56f));
         nameTag = tag.gameObject;
-        nameText = UIKit.Label("Name", tag.transform, "", 28f, TextAlignmentOptions.Center, UIKit.Accent, true);
+        nameText = UIKit.ArtLabel("Name", tag.transform, "", 44f, TextAlignmentOptions.Left);
         UIKit.Stretch(nameText.rectTransform);
 
-        bodyText = UIKit.Label("Text", box.transform, "", 32f, TextAlignmentOptions.TopLeft, UIKit.TextColor);
-        UIKit.Place(bodyText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -36f), new Vector2(1400f, 170f));
+        bodyText = UIKit.Label("Text", box, "", 30f, TextAlignmentOptions.TopLeft, UIKit.TextColor);
         bodyText.textWrappingMode = TextWrappingModes.Normal;
 
-        continueHint = UIKit.Label("Continue", box.transform, "Click / Space >>", 20f, TextAlignmentOptions.BottomRight, UIKit.TextMuted);
-        UIKit.Place(continueHint.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-24f, 14f), new Vector2(300f, 28f));
+        // Segitiga "lanjut" (Next button dari artist, diputar menghadap bawah), memantul saat teks selesai
+        Sprite arrowSprite = skin != null ? skin.nextNormal : null;
+        if (arrowSprite != null)
+        {
+            Image arrow = UIKit.ArtImage("Continue", box, arrowSprite, 0.8f);
+            continueArrow = arrow.rectTransform;
+            continueArrow.localRotation = Quaternion.Euler(0f, 0f, -90f);
+        }
+        else
+        {
+            TextMeshProUGUI hint = UIKit.Label("Continue", box, "▼", 30f, TextAlignmentOptions.Center, UIKit.TextColor);
+            continueArrow = hint.rectTransform;
+            continueArrow.sizeDelta = new Vector2(40f, 40f);
+        }
+        continueArrow.anchorMin = continueArrow.anchorMax = new Vector2(1f, 0f);
+        continueArrow.pivot = new Vector2(0.5f, 0.5f);
+        continueArrow.anchoredPosition = ArrowRest;
 
-        Button skip = UIKit.Button("Skip", shakeRoot, "Skip  >>", 22f, Finish);
-        UIKit.Place((RectTransform)skip.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-30f, -30f), new Vector2(180f, 54f));
     }
 
     private void ShowLine(int index)
@@ -130,8 +163,18 @@ public class StoryPlayer : MonoBehaviour
         cg.enabled = line.cg != null;
 
         bool hasSpeaker = !string.IsNullOrWhiteSpace(line.speaker);
-        nameTag.SetActive(hasSpeaker);
+        bool taduh = hasSpeaker && taduhBar != null && line.speaker.Trim().Equals("Taduh", StringComparison.OrdinalIgnoreCase);
+        if (taduhBar != null) taduhBar.gameObject.SetActive(taduh);
+        plainBar.enabled = !taduh;
+        nameTag.SetActive(hasSpeaker && !taduh);
         nameText.text = hasSpeaker ? line.speaker : "";
+
+        // Teks: di kanan potret Taduh, atau dari kiri kotak; turun sedikit kalau ada nama
+        Vector2 barSize = BarPixels * BarScale;
+        float left = taduh ? 290f : 60f;
+        float top = taduh || hasSpeaker ? 92f : 50f;
+        UIKit.Place(bodyText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(left, -top),
+            new Vector2(barSize.x - left - 90f, barSize.y - top - 30f));
 
         // Narasi (tanpa pembicara) ditulis miring
         bodyText.fontStyle = hasSpeaker ? FontStyles.Normal : FontStyles.Italic;
@@ -167,7 +210,10 @@ public class StoryPlayer : MonoBehaviour
             typed += dt * CharsPerSecond;
             bodyText.maxVisibleCharacters = Mathf.Min(totalChars, Mathf.FloorToInt(typed));
         }
-        continueHint.enabled = bodyText.maxVisibleCharacters >= totalChars && Mathf.Repeat(Time.unscaledTime, 1f) < 0.7f;
+        // Segitiga muncul & memantul naik-turun setelah teks selesai diketik
+        bool done = bodyText.maxVisibleCharacters >= totalChars;
+        continueArrow.gameObject.SetActive(done);
+        if (done) continueArrow.anchoredPosition = ArrowRest + new Vector2(0f, Mathf.Abs(Mathf.Sin(Time.unscaledTime * 4f)) * 10f);
 
         // Getar layar
         if (shakeTimer > 0f)

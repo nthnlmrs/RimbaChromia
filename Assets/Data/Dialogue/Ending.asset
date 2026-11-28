@@ -25,17 +25,17 @@ MonoBehaviour:
     shake: 0
   - speaker: ""
     text: "The fire and smoke slowly fade away. The sky clears, and a beam of light shines upon The Wall."
-    cg: {fileID: 0}
+    cg: {fileID: 21300000, guid: 21e01338564ef720a71d10bc1951cb74, type: 3}
     backgroundColor: {r: 0.55, g: 0.42, b: 0.28, a: 1}
     shake: 0
   - speaker: "Taduh"
     text: "You did it... Thank you for protecting us."
-    cg: {fileID: 0}
+    cg: {fileID: 21300000, guid: 21e01338564ef720a71d10bc1951cb74, type: 3}
     backgroundColor: {r: 0.72, g: 0.66, b: 0.45, a: 1}
     shake: 0
   - speaker: "Taduh"
     text: "The forest is safe from deforestation. The forest spirits will never forget you."
-    cg: {fileID: 0}
+    cg: {fileID: 21300000, guid: 21e01338564ef720a71d10bc1951cb74, type: 3}
     backgroundColor: {r: 0.72, g: 0.66, b: 0.45, a: 1}
     shake: 0
   - speaker: ""

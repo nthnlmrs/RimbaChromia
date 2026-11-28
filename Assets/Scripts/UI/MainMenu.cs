@@ -27,8 +27,9 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private float cameraSway = 0.35f;
 
     private static readonly Color TitleGreen = new Color(0.33f, 0.43f, 0.27f);
-    private static readonly Vector2 ButtonSize = new Vector2(340f, 146f);
-    private const float ButtonSpacing = 168f;
+    private static readonly Vector2 ButtonSize = new Vector2(450f, 136f);
+    private const float ButtonSpacing = 162f;
+    private const float MenuLeft = 110f;
 
     private Camera cam;
     private GameObject settingsOverlay;
@@ -42,7 +43,9 @@ public class MainMenu : MonoBehaviour
     {
         Time.timeScale = 1f;
         SetupLightAndCamera();
-        BuildEnvironment();
+        // Ada gambar latar dari artist -> pakai itu; kalau belum, latar hutan 3D
+        UISkin skin = UISkin.Current;
+        if (skin == null || skin.menuBackground == null) BuildEnvironment();
         BuildUI();
     }
 
@@ -194,46 +197,57 @@ public class MainMenu : MonoBehaviour
         menuGroup = canvas.gameObject.AddComponent<CanvasGroup>();
         menuGroup.alpha = 0f;
 
-        // Gelap tipis di bawah supaya tombol terbaca di atas hutan
-        Image shade = UIKit.Panel("Shade", root, new Color(0f, 0f, 0f, 0.25f), false);
+        if (skin != null && skin.menuBackground != null)
+        {
+            // Latar lukisan layar penuh (dipotong menyesuaikan rasio layar, tidak gepeng)
+            Image bg = UIKit.Panel("Background", root, Color.white, false);
+            bg.sprite = skin.menuBackground;
+            UIKit.Stretch(bg.rectTransform);
+            bg.gameObject.AddComponent<AspectRatioFitter>().aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+            bg.GetComponent<AspectRatioFitter>().aspectRatio = skin.menuBackground.rect.width / skin.menuBackground.rect.height;
+            bg.transform.SetAsFirstSibling();
+        }
+
+        // Gelap tipis di kiri supaya logo & tombol terbaca
+        Image shade = UIKit.Panel("Shade", root, new Color(0f, 0f, 0f, 0.18f), false);
         UIKit.Stretch(shade.rectTransform);
 
-        // Judul
-        RectTransform titleRoot;
-        if (skin != null && skin.menuTitleSign != null)
+        // Taduh di kanan bawah, bernapas pelan
+        if (skin != null && skin.menuCharacter != null)
         {
-            Image sign = UIKit.ArtImage("Title Sign", root, skin.menuTitleSign, 1.25f);
-            titleRoot = sign.rectTransform;
-            UIKit.Place(titleRoot, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -70f), titleRoot.sizeDelta);
+            Image taduh = UIKit.ArtImage("Taduh", root, skin.menuCharacter, 1f);
+            float h = 520f;
+            Vector2 size = new Vector2(h * skin.menuCharacter.rect.width / skin.menuCharacter.rect.height, h);
+            UIKit.Place(taduh.rectTransform, new Vector2(1f, 0f), new Vector2(0.5f, 0f), new Vector2(-330f, 30f), size);
+            taduh.gameObject.AddComponent<MenuIdleBob>();
+        }
+
+        // Logo kiri atas (sesuai mockup Home UI)
+        if (skin != null && skin.menuLogo != null)
+        {
+            Image logo = UIKit.ArtImage("Logo", root, skin.menuLogo, 1f);
+            float w = 860f;
+            UIKit.Place(logo.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(MenuLeft, -120f),
+                new Vector2(w, w * skin.menuLogo.rect.height / skin.menuLogo.rect.width));
         }
         else
         {
-            titleRoot = UIKit.Rect("Title", root);
-            UIKit.Place(titleRoot, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -70f), new Vector2(715f, 218f));
+            TextMeshProUGUI titleText = UIKit.ArtLabel("Title Text", root, title, 104f, TextAlignmentOptions.Left, TitleGreen);
+            UIKit.Place(titleText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(MenuLeft, -120f), new Vector2(900f, 150f));
         }
-        TextMeshProUGUI titleText = UIKit.ArtLabel("Title Text", titleRoot, title, 104f, TextAlignmentOptions.Center, TitleGreen);
-        UIKit.Place(titleText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 14f), new Vector2(660f, 140f));
-        titleText.enableAutoSizing = true;
-        titleText.fontSizeMin = 40f;
-        titleText.fontSizeMax = 104f;
 
-        TextMeshProUGUI sub = UIKit.ArtLabel("Subtitle", root, subtitle, 34f);
-        UIKit.Place(sub.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -300f), new Vector2(1200f, 50f));
+        // Tombol kolom kiri: START, SETTINGS, QUIT
+        float y = -330f;
+        MenuButton(root, skin?.menuButtonOrange, "START", new Vector2(MenuLeft, y), Play, Color.white);
+        MenuButton(root, skin?.menuButtonOrange, "SETTINGS", new Vector2(MenuLeft, y - ButtonSpacing), OpenSettings, new Color(0.85f, 0.72f, 0.64f));
+        MenuButton(root, skin?.menuButtonRed, "QUIT", new Vector2(MenuLeft, y - ButtonSpacing * 2f), Quit, Color.white);
 
-        // Tombol
-        // Ukuran seragam & jarak cukup supaya tidak saling menimpa
-        float y = -40f;
-        MenuButton(root, skin?.menuButtonOrange, "PLAY", new Vector2(0f, y), Play);
-        MenuButton(root, skin?.menuButtonOrange, "SETTINGS", new Vector2(0f, y - ButtonSpacing), OpenSettings);
-        MenuButton(root, skin?.menuButtonRed, "QUIT", new Vector2(0f, y - ButtonSpacing * 2f), Quit);
-
-        TextMeshProUGUI footer = UIKit.Label("Footer", root, "Gimersia 2026", 24f, TextAlignmentOptions.BottomRight, UIKit.TextMuted);
-        UIKit.Place(footer.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-28f, 18f), new Vector2(400f, 36f));
 
         BuildSettings(root, skin);
     }
 
-    private Button MenuButton(RectTransform parent, Sprite sprite, string label, Vector2 position, UnityEngine.Events.UnityAction onClick)
+/// <summary>Tombol kayu bertulisan; posisi = pojok kiri-atas tombol dari pojok kiri-atas layar.</summary>
+    private Button MenuButton(RectTransform parent, Sprite sprite, string label, Vector2 position, UnityEngine.Events.UnityAction onClick, Color tint)
     {
         Button button;
         if (sprite != null)
@@ -246,7 +260,9 @@ public class MainMenu : MonoBehaviour
             button = UIKit.Button(label, parent, "", 40f, onClick);
         }
         RectTransform rt = (RectTransform)button.transform;
-        UIKit.Place(rt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), position, ButtonSize);
+        UIKit.Place(rt, new Vector2(0f, 1f), new Vector2(0.5f, 0.5f), position + new Vector2(ButtonSize.x * 0.5f, -ButtonSize.y * 0.5f), ButtonSize);
+        Image image = button.GetComponent<Image>();
+        if (image != null) image.color = tint;
 
         TextMeshProUGUI text = UIKit.ArtLabel("Label", rt, label, 56f);
         UIKit.Stretch(text.rectTransform);
@@ -355,6 +371,26 @@ public class MainMenu : MonoBehaviour
 #else
         Application.Quit();
 #endif
+    }
+}
+
+/// <summary>Gerak naik-turun pelan (karakter "bernapas").</summary>
+public class MenuIdleBob : MonoBehaviour
+{
+    private RectTransform rt;
+    private Vector2 basePosition;
+
+    private void Start()
+    {
+        rt = (RectTransform)transform;
+        basePosition = rt.anchoredPosition;
+    }
+
+    private void Update()
+    {
+        float t = Time.unscaledTime;
+        rt.anchoredPosition = basePosition + new Vector2(0f, Mathf.Sin(t * 1.6f) * 6f);
+        rt.localScale = new Vector3(1f, 1f + Mathf.Sin(t * 1.6f + 0.6f) * 0.012f, 1f);
     }
 }
 

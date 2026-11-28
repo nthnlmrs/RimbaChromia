@@ -55,25 +55,48 @@ public class TutorialGuide : MonoBehaviour
         grid = gridManager;
 
         RectTransform root = (RectTransform)transform;
-        UIKit.Place(root, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 300f), new Vector2(1180f, 156f));
         Image bg = root.gameObject.AddComponent<Image>();
-        bg.color = UIKit.PanelColor;
         bg.raycastTarget = false;
         panel = root.gameObject;
+        UISkin skin = UISkin.Current;
 
-        Image accent = UIKit.Panel("Accent", root, UIKit.Good, false);
-        UIKit.Place(accent.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), Vector2.zero, new Vector2(8f, 156f));
+        if (skin != null && skin.tutorialTaduhBar != null)
+        {
+            // Papan kayu dari artist (1167x293): potret & nama Taduh sudah ada di gambarnya
+            bg.sprite = skin.tutorialTaduhBar;
+            bg.color = Color.white;
+            UIKit.Place(root, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-93f, 262f), new Vector2(1167f, 293f));
 
-        TextMeshProUGUI name = UIKit.Label("Speaker", root, "Taduh", 32f, TextAlignmentOptions.TopLeft, UIKit.Good, true);
-        UIKit.Place(name.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -12f), new Vector2(300f, 38f));
+            progress = UIKit.Label("Progress", root, "", 24f, TextAlignmentOptions.TopRight, UIKit.ArtText);
+            UIKit.PlaceOnArt(progress.rectTransform, new Vector2(1010f, 100f), new Vector2(240f, 32f), 1f);
 
-        progress = UIKit.Label("Progress", root, "", 24f, TextAlignmentOptions.TopRight, UIKit.TextMuted);
-        UIKit.Place(progress.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-24f, -14f), new Vector2(260f, 32f));
+            body = UIKit.Label("Text", root, "", 28f, TextAlignmentOptions.TopLeft, UIKit.ArtText);
+            UIKit.Place(body.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(405f, -132f), new Vector2(712f, 135f));
+            body.outlineWidth = 0.15f;
+            body.outlineColor = UIKit.ArtOutline;
+        }
+        else
+        {
+            UIKit.Place(root, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 300f), new Vector2(1180f, 156f));
+            bg.color = UIKit.PanelColor;
 
-        body = UIKit.Label("Text", root, "", 30f, TextAlignmentOptions.TopLeft, UIKit.TextColor);
-        UIKit.Place(body.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -54f), new Vector2(1124f, 96f));
+            Image accent = UIKit.Panel("Accent", root, UIKit.Good, false);
+            UIKit.Place(accent.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), Vector2.zero, new Vector2(8f, 156f));
+
+            TextMeshProUGUI name = UIKit.Label("Speaker", root, "Taduh", 32f, TextAlignmentOptions.TopLeft, UIKit.Good, true);
+            UIKit.Place(name.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -12f), new Vector2(300f, 38f));
+
+            progress = UIKit.Label("Progress", root, "", 24f, TextAlignmentOptions.TopRight, UIKit.TextMuted);
+            UIKit.Place(progress.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-24f, -14f), new Vector2(260f, 32f));
+
+            body = UIKit.Label("Text", root, "", 30f, TextAlignmentOptions.TopLeft, UIKit.TextColor);
+            UIKit.Place(body.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -54f), new Vector2(1124f, 96f));
+        }
         body.textWrappingMode = TextWrappingModes.Normal;
         body.richText = true;
+        body.enableAutoSizing = true;
+        body.fontSizeMin = 20f;
+        body.fontSizeMax = body.fontSize;
 
         // Hitung mundur ditahan selama pemain belajar
         if (waves != null) waves.HoldCountdown = true;
